@@ -116,3 +116,41 @@ To show these commands in Telegram's **slash command autocomplete**:
 - **Help** opens the bot's private guide.
 
 Note: No image from the reference group has been copied. Your own uploaded photo supplies the visual. Existing group rules, topic rules, link moderation and join-approval settings remain intact. The code is deployment-tested by GitHub Actions; the first real new-member welcome must be tested inside Telegram.
+
+
+## YAJETZY v4 — File Finder (search for existing Telegram file posts)
+
+**Search in the same Telegram group only.** YAJETZY replies with clickable links to the original file messages in that group; it does NOT download, scan, or host those files. Group membership is still required to open private group links.
+
+### Member commands
+- `/find example.zip` — search indexed filenames and captions.
+- `/search setup guide` — same search.
+- `hanap setup guide` or `find setup guide` — chat phrases (not normal chat keywords alone).
+- Bot returns up to 5 buttons linking to the original post in the same group.
+- An 8-second cooldown per member limits repeated search spam.
+- Slash command autocomplete: private `/panel` → YAJE Discussions → **⌨️ Install Telegram commands** again to refresh the list after this upgrade.
+
+### Enable automatic indexing per topic (OFF by default)
+1. Open **@yaje37_bot private chat**, send `/panel`.
+2. Select the group, then **🗂 Topics & Main Menu**.
+3. Register each desired topic first (if not yet listed) by copying its Topic Link and using `/topicadd LINK | Topic Name | Description` privately.
+4. Tap a topic → **⬜ Auto-index new files** → turn it ON.
+5. From that point on, new **document uploads** in that topic are indexed by filename and caption; old posts are NOT backfilled.
+6. Only enable indexing for topics where shared files are intended for member discovery. Tell members which topics are indexed.
+
+### Add old file posts manually
+- **Option A: Reply in group.** Reply directly to an existing Telegram **document/file post** with `/index` or `/index Custom searchable name`. Only group admins can do this. The bot will try to delete the command and confirm in your private DM. Run `/start` privately first.
+- **Option B: In private DM.** Copy **Message Link** from the original file post, then send:
+  `/fileadd https://t.me/c/4476272910/TOPIC_ID/MESSAGE_ID | File display name`
+  (Replace IDs with actual message link values. General messages may have a shorter URL.)
+  The bot verifies you are a group admin but cannot verify content of historical links. Please check it manually.
+
+### Remove an unwanted search result
+- Reply to the original indexed file post with `/unindex` as an admin.
+- Deleting a file message in Telegram does not automatically remove its index record; admins should unindex files that were removed.
+
+### Notes
+- Telegram Bot API cannot download/search an entire existing group history through normal bot access. Searching begins when a topic is enabled and new documents arrive, or when admins index old posts.
+- Never treat an indexed file as verified safe. Review unfamiliar files, especially executable software, before trusting them.
+- File index and search cooldown records are scoped by Telegram group ID. They include only filenames, small captions, Telegram message IDs, and metadata—never uploaded file bytes.
+- Indexing settings for existing topics start OFF. Enabling them does not change the existing Welcome, Rules, moderation, or Join Request settings.
