@@ -41,3 +41,45 @@
 - Start in a test group. Admin moderation permissions can delete messages and restrict members when switches are turned ON.
 - Group link `t.me/c/...` is not enough for the bot to join automatically. You must add it through Telegram.
 - The source code is not a live bot until deployed with database, environment variables, and webhook.
+
+
+## YAJETZY v2 — Topic Management at Main Menu
+
+**Safe by default:** Deployment itself does NOT send any message into your group.
+The topic directory is posted only when an authorized administrator presses Publish / Refresh in the bot's private chat.
+
+1. Open [@yaje37_bot](https://t.me/yaje37_bot) and send `/panel`.
+2. Select **YAJE Discussions**, then click **🗂 Topics & Main Menu**.
+3. The **General** topic is already registered as topic ID 1.
+4. For each existing topic (Feedbacks, Modules Files, Announcements, etc.):
+   - Open that topic in the Telegram group.
+   - Send `/topicregister Feedbacks | Suggestions and improvement ideas` (replace name/description).
+   - The bot tries to delete the registration command to avoid clutter.
+   - Your bot should send a registration confirmation **in your private DM**. If not, send `/start` privately first.
+5. Return to private `/panel` → **Topics & Main Menu**. Choose a topic to edit its directory title, description, visible status, or link rules.
+6. Click **Preview main menu** first. Then click **📌 Publish / Refresh General menu**. This sends or edits one menu in the group's General topic, and attempts to pin it (bot needs **Pin Messages** permission).
+7. Whenever you change topic details, click **Publish / Refresh** again to update the posted directory.
+
+### Topic-specific link rules
+
+Each topic defaults to **INHERIT** (uses existing global Link blocking setting). Tap the private panel's Link Policy button to cycle:
+- **ALLOW**: permit links only in that topic, even if group blocking is ON.
+- **BLOCK**: remove links only in that topic, even if group blocking is OFF.
+- **INHERIT**: use the existing group-wide setting.
+
+The bot needs **Delete Messages** for blocking to work. Be careful using BLOCK in a resources-focused topic; do not share or endorse untrusted files.
+
+### Why topic registration is needed
+
+Telegram's Bot API does not expose a complete list of existing topics. It provides a `message_thread_id` on topic messages and topic creation events for new topics. Registration is a one-time step to obtain the correct topic ID and name for old topics. The bot can discover topic IDs when members post in existing topics, but those are hidden from the public directory until named/activated by an admin.
+
+Current group: YAJE Discussions `-1004476272910`. This group has **Topics** enabled. Your public invite link is not necessary for bot registration.
+
+### Troubleshooting
+
+- The topic is not listed: send `/topicregister Name | Description` **inside that topic** and reopen the private menu.
+- Bot did not delete the command: enable Telegram **Delete Messages** admin permission.
+- Bot did not pin main menu: enable **Pin Messages**, or pin the new menu manually.
+- Bot did not send DM: open the bot privately and send `/start`, then retry.
+- Main menu shows old descriptions: press **Publish / Refresh General menu** again.
+- Publishing returns `not enough rights`: verify that the bot can send messages and pin messages in the group.
