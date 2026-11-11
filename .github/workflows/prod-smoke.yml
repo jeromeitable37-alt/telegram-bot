@@ -1,0 +1,34 @@
+name: YAJETZY V6 Production Smoke
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  public-endpoints:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      YAJE_BASE_URL: https://telegram-bot-theta-nine.vercel.app
+    steps:
+      - name: Check production Mini App is served
+        run: |
+          set -euo pipefail
+          ready=0
+          for n in $(seq 1 20); do
+            code=$(curl --location --silent --show-error --max-time 15 --output /tmp/yaje-mini.html --write-out '%{http_code}' "$YAJE_BASE_URL/mini" || true)
+            if [ "$code" = "200" ] && grep -qi 'YAJETZY' /tmp/yaje-mini.html; then
+              ready=1
+              break
+            fi
+            echo "Mini App not ready: HTTP $code (attempt $n)"
+            sleep 5
+          done
+          test "$ready" = "1"
+          echo 'Production /mini responded 200 with YAJETZY markup.'
+      - name: Reject unauthenticated production V6 API request
+        run: |
+          set -euo pipefail
+          status=$(curl --location --silent --show-error --max-time 15 --output /tmp/yaje-api.txt --write-out '%{http_code}' "$YAJE_BASE_URL/api/v6?mode=bootstrap")
+          test "$status" = "401"
+          grep -qi 'Open YAJETZY inside Telegram' /tmp/yaje-api.txt
+          echo 'Production API rejected unsigned requests with HTTP 401.'
