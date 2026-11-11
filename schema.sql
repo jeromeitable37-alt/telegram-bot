@@ -122,3 +122,53 @@ CREATE TABLE IF NOT EXISTS note_cooldowns (
   PRIMARY KEY(chat_id,user_id)
 );
 CREATE INDEX IF NOT EXISTS note_cooldowns_time_idx ON note_cooldowns(last_used_at);
+
+
+-- YAJETZY V6: Member Hub, managed file reviews, report queue and support center.
+-- Additive migration; preserves all existing Telegram topics, notes and uploads.
+ALTER TABLE indexed_files ADD COLUMN IF NOT EXISTS delivery_approved BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE indexed_files ADD COLUMN IF NOT EXISTS review_status TEXT NOT NULL DEFAULT 'pending'
+  CHECK (review_status IN ('pending','approved','rejected'));
+ALTER TABLE indexed_files ADD COLUMN IF NOT EXISTS reviewed_by BIGINT;
+ALTER TABLE indexed_files ADD COLUMN IF NOT EXISTS reviewed_at TIMESTAMPTZ;
+CREATE INDEX IF NOT EXISTS indexed_files_review_idx ON indexed_files(chat_id,review_status,indexed_at DESC);
+CREATE TABLE IF NOT EXISTS file_delivery_cooldowns (
+  chat_id BIGINT NOT NULL REFERENCES groups(chat_id) ON DELETE CASCADE,
+  user_id BIGINT NOT NULL,
+  last_used_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY(chat_id,user_id)
+);
+CREATE TABLE IF NOT EXISTS member_reports (
+  id BIGSERIAL PRIMARY KEY,
+  chat_id BIGINT NOT NULL REFERENCES groups(chat_id) ON DELETE CASCADE,
+  reporter_id BIGINT NOT NULL,
+  target_user_id BIGINT,
+  target_message_id BIGINT,
+  reason TEXT NOT NULL CHECK(length(reason) BETWEEN 3 AND 500),
+  status TEXT NOT NULL DEFAULT 'pending'
+    CHECK(status IN ('pending','reviewed','dismissed')),
+  reviewed_by BIGINT,
+  reviewed_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS member_reports_queue_idx
+  ON member_reports(chat_id,status,created_at DESC);
+CREATE TABLE IF NOT EXISTS support_tickets (
+  id BIGSERIAL PRIMARY KEY,
+  chat_id BIGINT NOT NULL REFERENCES groups(chat_id) ON DELETE CASCADE,
+  user_id BIGINT NOT NULL,
+  message TEXT NOT NULL CHECK(length(message) BETWEEN 5 AND 1000),
+  status TEXT NOT NULL DEFAULT 'open' CHECK(status IN ('open','answered','closed')),
+  admin_reply TEXT,
+  reviewed_by BIGINT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS support_tickets_queue_idx
+  ON support_tickets(chat_id,status,created_at DESC);
+CREATE TABLE IF NOT EXISTS member_onboarding (
+  chat_id BIGINT NOT NULL REFERENCES groups(chat_id) ON DELETE CASCADE,
+  user_id BIGINT NOT NULL,
+  rules_ack_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY(chat_id,user_id)
+);
