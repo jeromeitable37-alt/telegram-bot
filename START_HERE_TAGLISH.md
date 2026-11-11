@@ -154,3 +154,45 @@ Note: No image from the reference group has been copied. Your own uploaded photo
 - Never treat an indexed file as verified safe. Review unfamiliar files, especially executable software, before trusting them.
 - File index and search cooldown records are scoped by Telegram group ID. They include only filenames, small captions, Telegram message IDs, and metadata—never uploaded file bytes.
 - Indexing settings for existing topics start OFF. Enabling them does not change the existing Welcome, Rules, moderation, or Join Request settings.
+
+
+## YAJETZY v5 — Notes Library (like /get notename and #notename)
+
+This is a separate system from `/find` File Finder.
+
+### For group members
+- `/notes` — See the saved note names for **this group**.
+- `/get welcome_guide` — Ask YAJETZY for saved text or a URL.
+- `#welcome_guide` — Quick shortcut; the bot replies to the hashtag with the saved note.
+- Unknown `#hashtags` are ignored, so regular discussion is not interrupted.
+- There is a short 4-second cooldown per member to limit repeated bot responses.
+- Notes do not grant access to private group files or prove an external download is safe.
+
+### For admins: add a note entirely in private DM
+1. Open [@yaje37_bot](https://t.me/yaje37_bot) privately and send `/panel` (or `/notes`).
+2. Select the group you actually administer.
+3. Click **📚 Notes Library**.
+4. Click **➕ Add note**.
+5. **Reply to the bot's NOTE ADD prompt** with a name, vertical bar, and content:
+
+   `welcome_guide | Welcome! Read our rules using /rules, then open /menu to browse topics.`
+
+   Or use a carefully verified external URL as the note content.
+6. YAJETZY confirms saving. In the group, members can now type `#welcome_guide` or `/get welcome_guide`.
+
+### Editing and removing notes
+- In private **Notes Library**, choose the note name.
+- **✏️ Edit note** prompts you to reply with replacement content.
+- **🗑 Delete note** asks for confirmation. Members can no longer retrieve it afterward.
+- Notes are stored separately by `chat_id` in Neon.
+- Only administrators with current Telegram group admin permissions can modify notes.
+
+### Name limits and safety
+- Names use **lowercase a-z, 0-9, and underscores**, starting with a letter (1–48 characters). Examples: `welcome_guide`, `module_faq`, `feedback`.
+- Keep note text within 3,500 characters. URLs are clickable as normal Telegram plain text.
+- Built-in names such as `rules`, `help`, `menu`, `start`, `status`, and `notes` are reserved.
+- Do not paste credentials, private links, malware, or unverified downloads into public notes. Admins should check external resources before sharing.
+- We intentionally DO NOT copy the contents or links of another community's private notes.
+
+### Enable slash command suggestions
+The /get and /notes commands are added to the bot's source menu definition. In YAJETZY private `/panel` → choose group → **⌨️ Install Telegram commands** to update the Telegram command menu.
