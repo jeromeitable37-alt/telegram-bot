@@ -51,3 +51,21 @@ CREATE TABLE IF NOT EXISTS processed_updates (
   processed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS processed_updates_time_idx ON processed_updates(processed_at);
+
+-- Topic directory and General main-menu state (additive migration)
+ALTER TABLE groups ADD COLUMN IF NOT EXISTS menu_message_id BIGINT;
+ALTER TABLE groups ADD COLUMN IF NOT EXISTS menu_updated_at TIMESTAMPTZ;
+CREATE TABLE IF NOT EXISTS group_topics (
+  chat_id BIGINT NOT NULL REFERENCES groups(chat_id) ON DELETE CASCADE,
+  thread_id BIGINT NOT NULL CHECK (thread_id > 0),
+  title TEXT NOT NULL CHECK (length(title) BETWEEN 1 AND 100),
+  description TEXT NOT NULL DEFAULT '',
+  link_policy TEXT NOT NULL DEFAULT 'inherit' CHECK (link_policy IN ('inherit','allow','block')),
+  listed BOOLEAN NOT NULL DEFAULT FALSE,
+  sort_order INTEGER NOT NULL DEFAULT 100,
+  last_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY(chat_id,thread_id)
+);
+CREATE INDEX IF NOT EXISTS group_topics_menu_idx ON group_topics(chat_id,listed,sort_order,thread_id);
