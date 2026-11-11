@@ -69,3 +69,9 @@ CREATE TABLE IF NOT EXISTS group_topics (
   PRIMARY KEY(chat_id,thread_id)
 );
 CREATE INDEX IF NOT EXISTS group_topics_menu_idx ON group_topics(chat_id,listed,sort_order,thread_id);
+
+-- YAJETZY v3: Optional branded welcome photo and member shortcut buttons.
+-- Store Telegram file_id only. Photos and secret tokens are never committed to GitHub.
+ALTER TABLE groups ADD COLUMN IF NOT EXISTS welcome_photo_file_id TEXT;
+ALTER TABLE groups ADD COLUMN IF NOT EXISTS welcome_buttons BOOLEAN NOT NULL DEFAULT TRUE;
+ALTER TABLE groups ADD COLUMN IF NOT EXISTS welcome_last_configured_at TIMESTAMPTZ;
