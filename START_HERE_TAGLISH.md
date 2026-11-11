@@ -51,11 +51,12 @@ The topic directory is posted only when an authorized administrator presses Publ
 1. Open [@yaje37_bot](https://t.me/yaje37_bot) and send `/panel`.
 2. Select **YAJE Discussions**, then click **🗂 Topics & Main Menu**.
 3. The **General** topic is already registered as topic ID 1.
-4. For each existing topic (Feedbacks, Modules Files, Announcements, etc.):
-   - Open that topic in the Telegram group.
-   - Send `/topicregister Feedbacks | Suggestions and improvement ideas` (replace name/description).
-   - The bot tries to delete the registration command to avoid clutter.
-   - Your bot should send a registration confirmation **in your private DM**. If not, send `/start` privately first.
+4. For each existing topic (Feedbacks, Modules Files, Announcements, etc.), **private registration is recommended**:
+   - Open the topic in Telegram and use **Copy Topic Link** (not Copy Message Link).
+   - In your **private YAJETZY chat**, send `/topicadd https://t.me/c/4476272910/123 | Feedbacks | Suggestions and improvement ideas`.
+   - Replace `123` with the real topic ID from the link, and replace the title and description.
+   - The bot validates that you are an administrator of the linked group and confirms privately.
+   - Alternative: inside that topic send `/topicregister Feedbacks | Suggestions and improvement ideas`; the bot tries to delete the command and send confirmation in DM.
 5. Return to private `/panel` → **Topics & Main Menu**. Choose a topic to edit its directory title, description, visible status, or link rules.
 6. Click **Preview main menu** first. Then click **📌 Publish / Refresh General menu**. This sends or edits one menu in the group's General topic, and attempts to pin it (bot needs **Pin Messages** permission).
 7. Whenever you change topic details, click **Publish / Refresh** again to update the posted directory.
