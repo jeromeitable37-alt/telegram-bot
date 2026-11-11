@@ -33,4 +33,22 @@ test('search results use original Telegram message links with max five buttons',
   assert.equal(keyboard.inline_keyboard.length,5);
   assert.equal(keyboard.inline_keyboard[0][0].url,'https://t.me/c/4476272910/123/2');
   assert.equal(keyboard.inline_keyboard.at(-1)[0].url,'https://t.me/c/4476272910/123/6');
+  assert.equal(keyboard.inline_keyboard[0].length,1,'unapproved files show the Telegram link only');
+});
+
+test('approved files have both original post link and send file action',()=>{
+  const keyboard=searchKeyboard(-1004476272910,[{
+    display_name:'YAJE Guide.pdf',message_id:321,thread_id:4,delivery_approved:true
+  }]);
+  assert.deepEqual(keyboard.inline_keyboard[0],[
+    {text:'📍 YAJE Guide.pdf',url:'https://t.me/c/4476272910/4/321'},
+    {text:'📥 Send File Here',callback_data:'fileget:321'}
+  ]);
+});
+test('unapproved APK or ZIP file never shows a resend action',()=>{
+  const keyboard=searchKeyboard(-1004476272910,[{
+    display_name:'unreviewed-file.apk',message_id:322,thread_id:7,delivery_approved:false
+  }]);
+  assert.equal(keyboard.inline_keyboard[0].length,1);
+  assert.equal(keyboard.inline_keyboard[0][0].url,'https://t.me/c/4476272910/7/322');
 });
