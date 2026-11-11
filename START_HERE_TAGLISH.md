@@ -84,3 +84,35 @@ Current group: YAJE Discussions `-1004476272910`. This group has **Topics** enab
 - Bot did not send DM: open the bot privately and send `/start`, then retry.
 - Main menu shows old descriptions: press **Publish / Refresh General menu** again.
 - Publishing returns `not enough rights`: verify that the bot can send messages and pin messages in the group.
+
+
+## YAJETZY v3 — Illustrated Welcome & Telegram Command Menu
+
+Inspired by professional Telegram forum welcome bots, but with YAJE Discussions branding and private admin controls.
+
+### Enable image welcome (no public setup spam)
+1. Open [@yaje37_bot](https://t.me/yaje37_bot) **private chat**, send `/panel`, choose **YAJE Discussions**.
+2. Click **🖼 Set welcome photo**.
+3. Reply to the bot's `WELCOME PHOTO ...` message with a regular Telegram **photo**. Use your own logo, poster, or graphic. Send it as a Photo, not a document.
+4. The bot saves Telegram's `file_id` in the existing Neon database. It does **not** publish immediately.
+5. Click **👀 Preview welcome** privately. If okay, future members who join will see the configured image and the original customized welcome caption.
+6. **🗑 Remove welcome photo** restores the text-only welcome. The welcome image feature is optional.
+7. **Welcome buttons** toggles Rules, Topic Directory and Help links below the welcome.
+
+### Helpful commands for members
+- `/menu` — A clickable topic directory.
+- `/rules` or `#rules` — Show the rules.
+- `/status` — Check bot response and group moderation status.
+- `/help` — Short public guide. Group administration stays private.
+
+To show these commands in Telegram's **slash command autocomplete**:
+1. In YAJETZY private `/panel`, choose the group.
+2. Press **⌨️ Install Telegram commands**. This registers commands for ALL groups using the bot and private chats. You only need to do this once.
+3. In a group, type `/` to view command suggestions.
+
+### Rule buttons on welcome
+- The **Read Rules** button links to the bot's private chat with a signed-format start parameter (not a secret). Member access is checked through Telegram `getChatMember` to reduce casual sharing outside the group.
+- **Topic Directory** opens the already published menu in General (if one exists). Otherwise it links to the General topic.
+- **Help** opens the bot's private guide.
+
+Note: No image from the reference group has been copied. Your own uploaded photo supplies the visual. Existing group rules, topic rules, link moderation and join-approval settings remain intact. The code is deployment-tested by GitHub Actions; the first real new-member welcome must be tested inside Telegram.
