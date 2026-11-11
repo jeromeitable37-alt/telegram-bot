@@ -172,3 +172,12 @@ CREATE TABLE IF NOT EXISTS member_onboarding (
   rules_ack_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   PRIMARY KEY(chat_id,user_id)
 );
+
+
+-- YAJETZY welcome topic routing: opt-in per group.
+-- A configured welcome_thread_id routes existing banners to that forum topic.
+-- Delete General join service notices where the Telegram bot has Delete Messages rights.
+ALTER TABLE groups ADD COLUMN IF NOT EXISTS welcome_thread_id BIGINT;
+ALTER TABLE groups ADD COLUMN IF NOT EXISTS welcome_clear_join_event BOOLEAN NOT NULL DEFAULT TRUE;
+CREATE INDEX IF NOT EXISTS groups_welcome_thread_idx
+  ON groups(chat_id,welcome_thread_id) WHERE welcome_thread_id IS NOT NULL;
