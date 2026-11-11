@@ -222,3 +222,20 @@ Forwarded filenames without **Copy Message Link** do not let YAJETZY retrieve th
 - Do not publish personal debug/bugreport archives; they may contain device identifiers, logs, and sensitive data.
 - Avoid sharing security bypass tools, software intended to disrupt other people's networks, or modules that disable overheating protection.
 - Third-party APKs, root modules, patched firmware and game modifications may damage devices, expose accounts, or violate game rules. YAJETZY cannot scan or certify them.
+
+
+## File search → original Telegram post or send a reviewed file
+
+Members can type `/find LSPosed` or `hanap filename` in the group. Each matching indexed document always gets a `📍 Open original post` link. For files approved by a group admin, search also shows `📥 Send File Here`. When clicked, YAJETZY uses Telegram `copyMessage` to copy the original document into the current group/topic; it does not download, host, or scan the APK bytes. Each member is rate-limited to one delivery per 20 seconds per group. If Telegram blocks copying or the source post no longer exists, YAJETZY shows the original link.
+
+**Important:** Auto-index enabled in a topic means new document posts can appear as **links** in search. It does not approve unknown or risky files for repeated sending. Files in an existing Telegram topic cannot be backfilled automatically via the Bot API. Forward existing reviewed files to indexing-enabled topics to register them, or reply to an existing file post with `/index`.
+
+### Review before direct delivery
+
+Group admin: Reply to a reviewed document with `/approvefile` in the YAJE group. This indexes the file and authorizes `📥 Send File Here` on search results. Admins replying to a document with `/index` or `/linknote name` also explicitly approve that document for direct delivery. Use `/unindex` (reply to the document) to remove it from search and revoke direct delivery. Do not approve or redistribute unknown APKs, bootloader/security bypass files, network disruption apps, disabling thermal safeguards, or private bug report archives. For unapproved files, users may view the original Telegram post, but no direct resend is offered.
+
+**Example test:**
+1. Upload a harmless PDF named `YAJE-Guide.pdf` to an indexing-enabled topic.
+2. In the group, send `/find YAJE-Guide`: the bot returns a link to the uploaded Telegram post.
+3. As group admin, reply directly to the PDF with `/approvefile`.
+4. Send `/find YAJE-Guide` again (after 8-second search cooldown) and tap `📥 Send File Here` to copy the PDF into the current discussion topic.
