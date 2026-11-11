@@ -196,3 +196,29 @@ This is a separate system from `/find` File Finder.
 
 ### Enable slash command suggestions
 The /get and /notes commands are added to the bot's source menu definition. In YAJETZY private `/panel` → choose group → **⌨️ Install Telegram commands** to update the Telegram command menu.
+
+
+## YAJETZY — Link an existing group file to a note (e.g. #lsposed)
+
+The list of filenames alone is **not enough** to create clickable Telegram file URLs: each link needs its original message ID and forum topic ID. Do not generate a fake URL. Never paste your Telegram login code, bot token, or private credentials.
+
+### Quickest method for a Telegram group admin
+1. Open the YAJE Discussions Telegram group and navigate to the **actual document post** (ZIP, PDF, etc.).
+2. Long-press or right-click the file post and choose **Reply**.
+3. Type: `/linknote lsposed` (replace `lsposed` with the note name, such as `anti_bootloop`).
+4. YAJETZY will:
+   - Generate the message link to the actual Telegram post.
+   - Add the original document message to the `/find` search index.
+   - Add the message URL and filename to that group's saved note, without discarding existing official documentation links.
+   - Send you a private confirmation and try to remove the setup command from the group.
+5. Test `#lsposed`, `/get lsposed`, and `/find LSPosed` in YAJE Discussions.
+
+For a document with no saved note, the bot can create a new note using the requested name. **Review a file's content and source before linking it publicly.** A listed file is not automatically safe or approved.
+
+### Import from forwarded file titles
+Forwarded filenames without **Copy Message Link** do not let YAJETZY retrieve the past message's exact Telegram ID. A catalog of titles can be stored in Neon as "link pending", but no live clickable file link should be claimed until an admin links the actual message using `/linknote` or sends its real copied link using `/fileadd`.
+
+### Special caution
+- Do not publish personal debug/bugreport archives; they may contain device identifiers, logs, and sensitive data.
+- Avoid sharing security bypass tools, software intended to disrupt other people's networks, or modules that disable overheating protection.
+- Third-party APKs, root modules, patched firmware and game modifications may damage devices, expose accounts, or violate game rules. YAJETZY cannot scan or certify them.
