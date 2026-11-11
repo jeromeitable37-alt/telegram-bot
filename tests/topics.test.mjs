@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {topicIdFromMessage, topicUrl, parseTopicRegistration, parseTopicReply, menuContent} from '../lib/topic-helpers.mjs';
+import {topicIdFromMessage, topicUrl, parseTopicRegistration, parseTopicReply, parseTopicLinkRegistration, menuContent} from '../lib/topic-helpers.mjs';
 
 test('builds safe topic URLs for private Telegram supergroups',()=>{
   assert.equal(topicUrl(-1004476272910,1),'https://t.me/c/4476272910/1');
@@ -37,4 +37,14 @@ test('menu lists only published topics and stays under Telegram length limit',()
   assert.match(text,/Feedbacks/);
   assert.doesNotMatch(text,/Hidden/);
   assert.ok(text.length<4096);
+});
+
+test('safely accepts only same-format private topic URLs and valid names',()=>{
+  assert.deepEqual(
+    parseTopicLinkRegistration('https://t.me/c/4476272910/42 | Feedbacks | Suggestions'),
+    {chatId:-1004476272910,threadId:42,name:'Feedbacks',description:'Suggestions'}
+  );
+  assert.equal(parseTopicLinkRegistration('https://t.me/c/4476272910/42/121 | Feedbacks'),null);
+  assert.equal(parseTopicLinkRegistration('https://t.me/othergroup/42 | Feedbacks'),null);
+  assert.equal(parseTopicLinkRegistration('https://t.me/c/4476272910/42 | '),null);
 });
