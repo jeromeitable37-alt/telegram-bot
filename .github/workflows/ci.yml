@@ -14,3 +14,22 @@ jobs:
       - run: npm install --no-audit --no-fund
       - run: npm test
       - run: npm run build
+      - name: Smoke-test Mini App and unauthenticated API
+        env:
+          BOT_TOKEN: '123456:CI_FAKE_TOKEN_NOT_REAL'
+        run: |
+          set -euo pipefail
+          PORT=3100 npm run start >/tmp/yajetzy-v6-ci.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          ready=0
+          for i in $(seq 1 40); do
+            if curl -fsS http://127.0.0.1:3100/mini -o /tmp/yajetzy-mini.html; then ready=1; break; fi
+            sleep 1
+          done
+          if [ "$ready" -ne 1 ]; then cat /tmp/yajetzy-v6-ci.log; exit 1; fi
+          grep -q 'YAJETZY' /tmp/yajetzy-mini.html
+          status=$(curl -sS -o /tmp/yajetzy-auth.json -w '%{http_code}' 'http://127.0.0.1:3100/api/v6?mode=bootstrap')
+          test "$status" = "401"
+          grep -q 'Open YAJETZY inside Telegram' /tmp/yajetzy-auth.json
+          echo "Mini App route served; unsigned API request blocked with HTTP 401."
