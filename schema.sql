@@ -75,3 +75,27 @@ CREATE INDEX IF NOT EXISTS group_topics_menu_idx ON group_topics(chat_id,listed,
 ALTER TABLE groups ADD COLUMN IF NOT EXISTS welcome_photo_file_id TEXT;
 ALTER TABLE groups ADD COLUMN IF NOT EXISTS welcome_buttons BOOLEAN NOT NULL DEFAULT TRUE;
 ALTER TABLE groups ADD COLUMN IF NOT EXISTS welcome_last_configured_at TIMESTAMPTZ;
+
+-- YAJETZY v4: opt-in, group-only file finder.
+-- Stores filenames, short captions, and Telegram message IDs, never file contents.
+ALTER TABLE group_topics ADD COLUMN IF NOT EXISTS file_index_enabled BOOLEAN NOT NULL DEFAULT FALSE;
+CREATE TABLE IF NOT EXISTS indexed_files (
+  chat_id BIGINT NOT NULL REFERENCES groups(chat_id) ON DELETE CASCADE,
+  message_id BIGINT NOT NULL CHECK(message_id > 0),
+  thread_id BIGINT NOT NULL CHECK(thread_id > 0),
+  display_name TEXT NOT NULL CHECK(length(display_name) BETWEEN 1 AND 200),
+  file_name TEXT NOT NULL DEFAULT '',
+  caption_text TEXT NOT NULL DEFAULT '',
+  mime_type TEXT NOT NULL DEFAULT '',
+  indexed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  manually_added BOOLEAN NOT NULL DEFAULT FALSE,
+  PRIMARY KEY(chat_id,message_id)
+);
+CREATE INDEX IF NOT EXISTS indexed_files_chat_recent_idx ON indexed_files(chat_id,indexed_at DESC);
+CREATE TABLE IF NOT EXISTS file_search_cooldowns (
+  chat_id BIGINT NOT NULL REFERENCES groups(chat_id) ON DELETE CASCADE,
+  user_id BIGINT NOT NULL,
+  last_used_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY(chat_id,user_id)
+);
+CREATE INDEX IF NOT EXISTS file_search_cooldowns_time_idx ON file_search_cooldowns(last_used_at);
