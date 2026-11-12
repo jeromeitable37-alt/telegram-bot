@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  messageLink,searchQueryFromText,normalizeQuery,documentInfo,searchKeyboard
+  messageLink,searchQueryFromText,normalizeQuery,documentInfo,sharedMediaInfo,searchKeyboard
 } from '../lib/file-search-helpers.mjs';
 
 test('builds Telegram links to original file messages inside forum topics',()=>{
@@ -51,4 +51,29 @@ test('unapproved APK or ZIP file never shows a resend action',()=>{
   }]);
   assert.equal(keyboard.inline_keyboard[0].length,1);
   assert.equal(keyboard.inline_keyboard[0][0].url,'https://t.me/c/4476272910/7/322');
+});
+
+test('extracts native Telegram tutorial video information without requiring document',()=>{
+  const vid=sharedMediaInfo({
+    message_id:987,
+    video:{file_id:'secret-file-id',file_unique_id:'unique',mime_type:'video/mp4',duration:61},
+    caption:'How to configure potato graphics safely\nStep-by-step overview'
+  });
+  assert.deepEqual(vid,{
+    title:'How to configure potato graphics safely',
+    fileName:'',
+    caption:'How to configure potato graphics safely\nStep-by-step overview',
+    mime:'video/mp4'
+  });
+  assert.deepEqual(sharedMediaInfo({message_id:15,video:{mime_type:'video/mp4'}}),{
+    title:'Tutorial video #15',fileName:'',caption:'',mime:'video/mp4'
+  });
+  assert.equal(sharedMediaInfo({text:'Forwarded from Kai: text quote only'}),null);
+});
+test('supports actual forwarded video and photo messages while keeping document behavior unchanged',()=>{
+  const forwarded={forward_origin:{type:'user'},message_id:12,video:{file_name:'tutorial.mp4',mime_type:'video/mp4'}};
+  assert.equal(sharedMediaInfo(forwarded).title,'tutorial.mp4');
+  assert.equal(sharedMediaInfo({message_id:13,photo:[{file_id:'p1'},{file_id:'p2'}]}).title,'Photo guide #13');
+  assert.deepEqual(sharedMediaInfo({document:{file_name:'ChromaBoostv3.zip',mime_type:'application/zip'}}),
+    documentInfo({document:{file_name:'ChromaBoostv3.zip',mime_type:'application/zip'}}));
 });
