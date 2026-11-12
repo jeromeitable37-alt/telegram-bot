@@ -256,3 +256,22 @@ CREATE TABLE IF NOT EXISTS federated_search_cooldowns (
   user_id BIGINT PRIMARY KEY,
   last_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+
+-- Personal opt-in vault. Files are only saved when a Telegram user manually
+-- forwards permitted media to the bot or explicitly replies /save in private.
+-- No access to third-party group history, no bypass of protected content.
+CREATE TABLE IF NOT EXISTS private_saved_files (
+  user_id BIGINT NOT NULL,
+  message_id BIGINT NOT NULL,
+  display_name TEXT NOT NULL,
+  file_name TEXT NOT NULL DEFAULT '',
+  mime_type TEXT NOT NULL DEFAULT '',
+  caption_text TEXT NOT NULL DEFAULT '',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY(user_id,message_id)
+);
+CREATE TABLE IF NOT EXISTS personal_vault_cooldowns (
+  user_id BIGINT PRIMARY KEY,
+  last_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
