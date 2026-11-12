@@ -147,3 +147,13 @@
 .v6-ai-compose-bottom span{font-size:11px;color:var(--v6-muted)}
 .v6-notice a{color:#c7fff0;text-decoration:underline;margin-left:7px;font-weight:700}
 @media(max-width:800px){.v6-row-picker{align-items:stretch;flex-direction:column;gap:8px}.v6-row-picker .v6-select{width:100%}.v6-ai-bubble{max-width:100%}.v6-ai-bubble.user{max-width:92%}.v6-ai-panel{padding:17px}}
+
+
+/* V7 multi-group federation (source-group memberships verified server-side). */
+.v6-scope-card{margin-bottom:16px}
+.v6-scope-selector{display:flex;gap:9px;flex-wrap:wrap}
+.v6-scope-selector .v6-btn{min-width:140px}
+.v6-federated-action{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:20px}
+.v6-federated-action span{font-size:11px;color:var(--v6-muted)}
+.v6-source-group{display:block;margin-top:5px;color:#56e6c5;font-size:11px;font-weight:700;overflow-wrap:anywhere}
+@media(max-width:600px){.v6-scope-selector .v6-btn{flex:1;min-width:130px}.v6-federated-action>.v6-btn{width:100%}}
