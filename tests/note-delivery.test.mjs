@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {fileNamesInNote,fileReferenceReply,genericFilenameNoteHtml,eligibleAutoDeliveryFiles} from '../lib/note-delivery-helpers.mjs';
+import {fileNamesInNote,fileReferenceReply,genericFilenameNoteHtml,eligibleAutoDeliveryFiles,linkedPostsFromNote,linkedMediaNoteReply} from '../lib/note-delivery-helpers.mjs';
 
 const chatId=-1004476272910;
 const note=`📂 YAJE FILE REFERENCE — anti_bootloop
@@ -95,4 +95,30 @@ test('auto delivery caps files at 2 and does not duplicate indexed messages',()=
   }));
   assert.deepEqual(eligibleAutoDeliveryFiles(note,files,chatId).map(f=>f.messageId),[32,33]);
   assert.deepEqual(eligibleAutoDeliveryFiles(note,[files[0],files[0]],chatId).map(f=>f.messageId),[32]);
+});
+
+test('tutorial video note has original post and admin-approved Send Here button',()=>{
+  const content='🗂️ YAJE NOTES — potatographics\n\n📎 Shared Telegram post\nFile: Tutorial: Potato Graphics\nPost: https://t.me/c/4476272910/284/300\n\n⚠️ Shared media not verified.';
+  const files=[{message_id:'300',thread_id:'284',display_name:'Tutorial: Potato Graphics',
+    file_name:'',review_status:'approved',delivery_approved:true}];
+  assert.deepEqual(linkedPostsFromNote(content,chatId),['https://t.me/c/4476272910/284/300']);
+  const result=linkedMediaNoteReply({slug:'potatographics',groupName:'YAJE Discussions',content,files,chatId});
+  assert.match(result.text,/Tutorial: Potato Graphics/);
+  assert.equal(result.reply_markup.inline_keyboard[0][0].url,'https://t.me/c/4476272910/284/300');
+  assert.equal(result.reply_markup.inline_keyboard[0][1].callback_data,'fileget:300');
+  assert.deepEqual(result.eligible,[{messageId:300,threadId:284,name:'Tutorial: Potato Graphics',
+    url:'https://t.me/c/4476272910/284/300'}]);
+});
+test('non-approved tutorials and external chat links are never auto-delivered',()=>{
+  const post='📎 Shared Telegram post\nPost: https://t.me/c/4476272910/284/300';
+  const files=[{message_id:'300',thread_id:'284',display_name:'Tutorial video',
+    review_status:'pending',delivery_approved:false}];
+  const result=linkedMediaNoteReply({slug:'tutorial',groupName:'YAJE',content:post,files,chatId});
+  assert.equal(result.eligible.length,0);
+  assert.equal(result.reply_markup,undefined);
+  assert.deepEqual(linkedPostsFromNote('Post: https://t.me/c/9999999999/4/3',chatId),[]);
+  const restricted=linkedMediaNoteReply({slug:'tutorial',groupName:'YAJE',
+    content:post+'\nStatus: Restricted review.',files:[{...files[0],review_status:'approved',delivery_approved:true}],chatId});
+  assert.equal(restricted.eligible.length,0);
+  assert.equal(restricted.reply_markup,undefined);
 });
