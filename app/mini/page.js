@@ -23,7 +23,7 @@ function FileRow({file,admin,onReview,onSend,busy}){
   const color=file.reviewStatus==='approved'?'ok':file.reviewStatus==='rejected'?'bad':'warn';
   return <div className="v6-file">
     <span className="v6-file-icon">{file.mime?.includes('pdf')?'▤':'▣'}</span>
-    <div className="v6-file-meta"><strong>{file.name}</strong>
+    <div className="v6-file-meta"><strong>{file.name}</strong>{file.sourceGroup&&<small className="v6-source-group">From: {file.sourceGroup}</small>}
       <div className="v6-filename-detail"><Tag tone={color}>{file.reviewStatus}</Tag><span>{fmt(file.createdAt)}</span>{file.approvedForDelivery&&<Tag tone="ok">Send enabled</Tag>}</div>
     </div>
     <div className="v6-file-actions">
@@ -44,6 +44,8 @@ export default function YAJETZYMiniApp(){
   const [notice,setNotice]=useState('');
   const [busy,setBusy]=useState(false);
   const [search,setSearch]=useState('');
+  const [searchScope,setSearchScope]=useState('current');
+  const [allSearchBusy,setAllSearchBusy]=useState(false);
   const [searchResults,setSearchResults]=useState(null);
   const [sendTopic,setSendTopic]=useState('1');
   const [sentLink,setSentLink]=useState('');
@@ -111,6 +113,7 @@ export default function YAJETZYMiniApp(){
     if(listed.length&&!listed.some(t=>String(t.id)===sendTopic))setSendTopic(String(listed[0].id));
   },[data,sendTopic]);
   useEffect(()=>{
+    if(searchScope==='all')return;
     if(!groupId||search.trim().length<2){setSearchResults(null);return;}
     let active=true;
     const t=setTimeout(()=>{
@@ -118,7 +121,17 @@ export default function YAJETZYMiniApp(){
         .then(v=>{if(active)setSearchResults(v);}).catch(e=>{if(active)setNotice(e.message);});
     },290);
     return()=>{active=false;clearTimeout(t);};
-  },[search,groupId,api]);
+  },[search,groupId,api,searchScope]);
+
+  const searchConnectedGroups=async()=>{
+    if(allSearchBusy||search.trim().length<2)return;
+    setAllSearchBusy(true);setNotice('');setSearchResults(null);
+    try{
+      const result=await api('?mode=searchall&q='+encodeURIComponent(search.trim()));
+      setSearchResults(result);
+    }catch(error){setNotice(error.message);}
+    finally{setAllSearchBusy(false);}
+  };
   const change=async(body,after)=>{
     if(busy)return;
     setBusy(true);setNotice('');
@@ -173,7 +186,7 @@ export default function YAJETZYMiniApp(){
     <aside className={'v6-sidebar '+(menu?'mobile-open':'')}>
       <div className="v6-brand"><div className="v6-logo">Y</div><div><strong>YAJETZY</strong><span>COMMUNITY OS · V7</span></div></div>
       <div className="v6-sidelabel">WORKSPACE</div>
-      <select aria-label="Select Telegram group" className="v6-select" value={groupId} onChange={e=>{setGroupId(e.target.value);setData(null);setSearch('');setHowHistory([]);setSentLink('');setTab('home');setMenu(false);}}>
+      <select aria-label="Select Telegram group" className="v6-select" value={groupId} onChange={e=>{setGroupId(e.target.value);setData(null);setSearch('');setSearchResults(null);setHowHistory([]);setSentLink('');setTab('home');setMenu(false);}}>
         {boot.groups.map(g=><option key={g.chatId} value={g.chatId}>{g.title}</option>)}
       </select>
       <div className="v6-sidelabel">EXPLORE</div>
@@ -198,9 +211,17 @@ export default function YAJETZYMiniApp(){
             <Card><div className="v6-section-title"><h2>Quick start</h2></div><div className="v6-checks"><div><i>{data.rulesAccepted?'✓':'1'}</i><p><strong>Review community rules</strong><small>{data.rulesAccepted?'Acknowledged':'Open Member Hub to acknowledge'}</small></p></div><div><i>2</i><p><strong>Search the file library</strong><small>Find approved files & helpful notes</small></p></div><div><i>3</i><p><strong>Need help?</strong><small>Open a support ticket for moderators</small></p></div></div>{button('Open Member Hub',()=>setTab('member'),'secondary')}</Card></div>
         </>}
         {tab==='search'&&<>
-          <div className="v6-page-heading"><div className="v6-eyebrow">SMART DISCOVERY</div><h1>Find it, faster.</h1><p>Find reviewed files and tutorials from the selected Telegram group. Tap a result to open the post or send the file to a discussion.</p></div>
+          <div className="v6-page-heading"><div className="v6-eyebrow">SMART DISCOVERY</div><h1>Find files across Telegram.</h1><p>Search this group or every connected group you belong to. Multi-group results stay private to verified source-group members.</p></div>
+          <Card className="v6-scope-card">
+            <div className="v6-section-title"><h2>Search scope</h2><Tag>Verified group access</Tag></div>
+            <div className="v6-scope-selector">
+              <button type="button" className={searchScope==='current'?'v6-btn primary':'v6-btn secondary'} onClick={()=>{setSearchScope('current');setSearchResults(null);}}>📁 This group</button>
+              <button type="button" className={searchScope==='all'?'v6-btn primary':'v6-btn secondary'} onClick={()=>{setSearchScope('all');setSearchResults(null);}}>🌐 All Connected Groups</button>
+            </div>
+            {searchScope==='all'&&<p className="v6-secondary">Only approved files from groups where YAJETZY has admin access, the group admin enabled /filehub on, and your Telegram membership is verified. External private files open in their ORIGINAL group—they aren't copied into unrelated chats.</p>}
+          </Card>
 
-          <Card className="v6-topic-picker">
+          {searchScope==='current'&&<Card className="v6-topic-picker">
             <div className="v6-section-title"><h2>📥 Send approved files to Telegram</h2><Tag tone="ok">Connected to {data.group.title}</Tag></div>
             <div className="v6-row-picker">
               <label htmlFor="v6-send-topic">Choose destination topic</label>
@@ -209,9 +230,25 @@ export default function YAJETZYMiniApp(){
               </select>
             </div>
             <p className="v6-secondary">Select a result and tap “Send to topic.” YAJETZY will copy the reviewed Telegram message into that discussion. One file per member every 30 seconds.</p>
+          </Card>}
+          <div className="v6-search"><span>⌕</span><input placeholder="Search tutorials, screen recorder, guide…" value={search} onChange={e=>{setSearch(e.target.value);if(searchScope==='all')setSearchResults(null);}} /></div>
+          {searchScope==='all'&&<div className="v6-federated-action">
+            {button(allSearchBusy?'Searching…':'🔎 Search Connected Groups',searchConnectedGroups,'primary',allSearchBusy||search.trim().length<2)}
+            <span>Search across connected groups on demand. Minimum 8 seconds between queries.</span>
+          </div>}
+          {search.length<2?<Card><Empty>Type at least two letters to search your community's resources.</Empty></Card>:
+          searchScope==='all'&&!searchResults?<Card><Empty>Tap “Search Connected Groups” to find reviewed files across groups you're a member of.</Empty></Card>:
+          <div className="v6-columns"><Card><div className="v6-section-title"><h2>Matching files</h2><span>{searchResults?.files?.length||0} results</span></div>
+            {searchResults?.files?.map(f=><FileRow key={(f.sourceChatId||groupId)+':'+f.id} file={f} admin={searchScope==='current'&&admin} onReview={adminReview} onSend={searchScope==='current'?sendFile:undefined} busy={busy}/>)}
+            {!searchResults?.files?.length&&<Empty>{searchResults?.errorMessage||'No reviewed files found in your accessible groups. Ask a source group admin to enable /filehub on and review uploads.'}</Empty>}
           </Card>
-          <div className="v6-search"><span>⌕</span><input placeholder="Search tutorials, screen recorder, guide…" value={search} onChange={e=>setSearch(e.target.value)} /></div>
-          {search.length<2?<Card><Empty>Type at least two letters to search your community's resources.</Empty></Card>:<div className="v6-columns"><Card><div className="v6-section-title"><h2>Matching files</h2><span>{searchResults?.files?.length||0} results</span></div>{searchResults?.files?.map(f=><FileRow key={f.id} file={f} admin={admin} onReview={adminReview} onSend={sendFile} busy={busy}/>)}{!searchResults?.files?.length&&<Empty>No approved files found. An admin can review new uploads in File Center.</Empty>}</Card><Card><div className="v6-section-title"><h2>Matching notes</h2><span>{searchResults?.notes?.length||0} results</span></div>{searchResults?.notes?.map(n=><div className="v6-note" key={n.slug}><b>#{n.slug}</b><p>{n.content}</p></div>)}{!searchResults?.notes?.length&&<Empty>No matching notes yet.</Empty>}</Card></div>}
+          {searchScope==='current'?<Card><div className="v6-section-title"><h2>Matching notes</h2><span>{searchResults?.notes?.length||0} results</span></div>{searchResults?.notes?.map(n=><div className="v6-note" key={n.slug}><b>#{n.slug}</b><p>{n.content}</p></div>)}{!searchResults?.notes?.length&&<Empty>No matching notes yet.</Empty>}</Card>
+          :<Card><div className="v6-section-title"><h2>Verified connected groups</h2><span>{searchResults?.groups?.length||0}</span></div>
+            {searchResults?.groups?.map(g=><div key={g.id} className="v6-setting"><div><strong>{g.name}</strong><small>Telegram membership verified</small></div><Tag tone="ok">Connected</Tag></div>)}
+            {!searchResults?.groups?.length&&<Empty>No authorized file-sharing groups connected yet.</Empty>}
+            <p className="v6-secondary">Bot cannot automatically join your Telegram groups or retrieve old message history. Group admins must add YAJETZY, enable file sharing and approve files. Private posts are only opened in their source groups.</p>
+          </Card>}
+          </div>}
         </>}
         {tab==='library'&&<>
           <div className="v6-page-heading"><div className="v6-eyebrow">CURATED RESOURCE HUB</div><h1>Smart File Center</h1><p>Community uploads are indexed automatically in enabled topics. Admin review is required before a download link becomes available here.</p></div>
