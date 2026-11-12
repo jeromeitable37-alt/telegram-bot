@@ -2,6 +2,14 @@
 import {useEffect,useMemo,useState,useCallback} from 'react';
 import './mini.css';
 
+const securityOptions=[
+  ['security_shield_enabled','Main Security Shield'],
+  ['security_block_bots','Block joining bot accounts'],
+  ['security_newcomer_links','Guard links from new members (6h)'],
+  ['security_newcomer_media','Guard video uploads from new members (1h)'],
+  ['security_sensitive_spam','Detect suspicious/scam promotions'],
+  ['security_auto_mute','Mute/ban persistent spammers']
+];
 const initialTabs=[
   ['home','⌂','Overview'],['search','⌕','Smart Search'],['library','▣','File Center'],
   ['member','◈','Member Hub'],['admin','⚙','Admin Console']
@@ -175,6 +183,17 @@ export default function YAJETZYMiniApp(){
           <div className="v6-page-heading"><div className="v6-eyebrow">MANAGEMENT ACCESS</div><h1>Admin Console</h1><p>Review files, moderation reports, support requests, and topic settings. Telegram permissions are verified for each action.</p></div>
           <div className="v6-stats"><Card><span>▣</span><strong>{adminData.stats?.pending_files||0}</strong><label>Files to review</label></Card><Card><span>⚑</span><strong>{adminData.stats?.reports||0}</strong><label>Pending reports</label></Card><Card><span>◈</span><strong>{adminData.stats?.open_tickets||0}</strong><label>Open tickets</label></Card><Card><span>▤</span><strong>{adminData.stats?.actions_7d||0}</strong><label>Actions / 7 days</label></Card></div>
           <div className="v6-columns">
+            <Card><div className="v6-section-title"><h2>🛡️ Security Shield</h2><Tag tone={adminData.security?.security_shield_enabled?'ok':'warn'}>{adminData.security?.security_shield_enabled?'ACTIVE':'OFF'}</Tag></div>
+              <p className="v6-secondary">Automatically remove high-confidence spam, block unauthorized bots joining, and escalate repeated violations. Admins are exempt. Uploaded media itself is not scanned.</p>
+              {securityOptions.map(([key,label])=><div className="v6-setting" key={key}>
+                <div><strong>{label}</strong></div>
+                <label><input type="checkbox" checked={adminData.security?.[key]===true} onChange={e=>change({action:'security_toggle',field:key,enabled:e.target.checked})} disabled={busy}/>{adminData.security?.[key]?'ON':'OFF'}</label>
+              </div>)}
+              <div className="v6-section-title v6-top-gap"><h2>Recent security actions</h2></div>
+              {adminData.securityEvents?.map((e,i)=><div className="v6-log" key={i}><span>{e.reason.replaceAll('_',' ')} · {e.action} <small>#{e.user_id}</small></span><small>{fmt(e.created_at)}</small></div>)}
+              {!adminData.securityEvents?.length&&<Empty>No security incidents recorded yet.</Empty>}
+              <p className="v6-secondary">Required Telegram permissions: Delete Messages and Ban Users/Restrict Members.</p>
+            </Card>
             <Card><div className="v6-section-title"><h2>Moderation queue</h2><Tag tone="warn">{adminData.reports?.filter(r=>r.status==='pending').length||0} pending</Tag></div>{adminData.reports?.map(r=><div className="v6-ticket" key={r.id}><div><strong>Report #{r.id}</strong><Tag tone={r.status==='pending'?'warn':'neutral'}>{r.status}</Tag></div><small>Reporter {r.reporter_id} · Target {r.targetUserId||'unassigned'} · {fmt(r.created_at)}</small><p>{r.reason}</p>{r.status==='pending'&&<div className="v6-action-row">{button('Mark reviewed',()=>change({action:'report_review',id:r.id,status:'reviewed'}),'primary',busy)}{button('Dismiss',()=>change({action:'report_review',id:r.id,status:'dismissed'}),'secondary',busy)}</div>}</div>)}{!adminData.reports?.length&&<Empty>No moderation reports.</Empty>}</Card>
             <Card><div className="v6-section-title"><h2>Support queue</h2></div>{adminData.tickets?.map(t=><div className="v6-ticket" key={t.id}><div><strong>Ticket #{t.id}</strong><Tag tone={t.status==='closed'?'neutral':'warn'}>{t.status}</Tag></div><small>User {t.userId} · {fmt(t.updated_at)}</small><p>{t.message}</p>{t.admin_reply&&<blockquote>{t.admin_reply}</blockquote>}{t.status!=='closed'&&<><textarea rows="2" className="v6-textarea" placeholder="Write a moderator reply" value={answers[t.id]||''} onChange={e=>setAnswers(x=>({...x,[t.id]:e.target.value}))}/><div className="v6-action-row">{button('Reply',()=>change({action:'ticket_answer',id:t.id,answer:answers[t.id]||''}), 'primary',busy||!(answers[t.id]||'').trim())}{button('Close',()=>change({action:'ticket_answer',id:t.id,close:true}), 'secondary',busy)}</div></>}</div>)}{!adminData.tickets?.length&&<Empty>No support tickets.</Empty>}</Card>
             <Card><div className="v6-section-title"><h2>Topic controls</h2><span>File indexing & directory</span></div>{topics.map(t=><div className="v6-setting" key={t.id}><div><strong>{t.title}</strong><small>Topic #{t.id}</small></div><label><input type="checkbox" checked={t.listed} onChange={e=>change({action:'topic_update',threadId:t.id,field:'listed',enabled:e.target.checked})} disabled={busy}/> Menu</label><label><input type="checkbox" checked={t.file_index_enabled} onChange={e=>change({action:'topic_update',threadId:t.id,field:'file_index_enabled',enabled:e.target.checked})} disabled={busy}/> Index</label></div>)}<p className="v6-secondary">Refresh the pinned General menu via Telegram /panel after changing visibility.</p></Card>
