@@ -181,3 +181,45 @@ ALTER TABLE groups ADD COLUMN IF NOT EXISTS welcome_thread_id BIGINT;
 ALTER TABLE groups ADD COLUMN IF NOT EXISTS welcome_clear_join_event BOOLEAN NOT NULL DEFAULT TRUE;
 CREATE INDEX IF NOT EXISTS groups_welcome_thread_idx
   ON groups(chat_id,welcome_thread_id) WHERE welcome_thread_id IS NOT NULL;
+
+
+-- YAJETZY V6 Security Shield (disabled by default for other groups).
+-- No private message contents stored; only hashes/counters and security action metadata.
+ALTER TABLE groups ADD COLUMN IF NOT EXISTS security_shield_enabled BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE groups ADD COLUMN IF NOT EXISTS security_block_bots BOOLEAN NOT NULL DEFAULT TRUE;
+ALTER TABLE groups ADD COLUMN IF NOT EXISTS security_newcomer_links BOOLEAN NOT NULL DEFAULT TRUE;
+ALTER TABLE groups ADD COLUMN IF NOT EXISTS security_newcomer_media BOOLEAN NOT NULL DEFAULT TRUE;
+ALTER TABLE groups ADD COLUMN IF NOT EXISTS security_sensitive_spam BOOLEAN NOT NULL DEFAULT TRUE;
+ALTER TABLE groups ADD COLUMN IF NOT EXISTS security_auto_mute BOOLEAN NOT NULL DEFAULT TRUE;
+CREATE TABLE IF NOT EXISTS security_recent_joins (
+  chat_id BIGINT NOT NULL REFERENCES groups(chat_id) ON DELETE CASCADE,
+  user_id BIGINT NOT NULL,
+  joined_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY(chat_id,user_id)
+);
+CREATE TABLE IF NOT EXISTS security_user_windows (
+  chat_id BIGINT NOT NULL REFERENCES groups(chat_id) ON DELETE CASCADE,
+  user_id BIGINT NOT NULL,
+  window_start TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  message_count INTEGER NOT NULL DEFAULT 0,
+  last_fingerprint TEXT NOT NULL DEFAULT '',
+  duplicate_count INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY(chat_id,user_id)
+);
+CREATE TABLE IF NOT EXISTS security_strikes (
+  chat_id BIGINT NOT NULL REFERENCES groups(chat_id) ON DELETE CASCADE,
+  user_id BIGINT NOT NULL,
+  window_start TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  strike_count INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY(chat_id,user_id)
+);
+CREATE TABLE IF NOT EXISTS security_events (
+  id BIGSERIAL PRIMARY KEY,
+  chat_id BIGINT NOT NULL REFERENCES groups(chat_id) ON DELETE CASCADE,
+  user_id BIGINT NOT NULL,
+  reason TEXT NOT NULL,
+  action TEXT NOT NULL,
+  message_id BIGINT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS security_events_recent_idx ON security_events(chat_id,created_at DESC);
