@@ -7,7 +7,7 @@ const modules=[
   {icon:'📊',title:'Admin Console',body:'Review queue, moderation activity, topic management and announcements.'},
   {icon:'🔐',title:'Telegram-verified access',body:'Signed Mini App identity and current Telegram group permissions; no separate account needed.'}
 ];
-export const metadata={title:'YAJETZY V6 – YAJE Community OS',description:'Telegram Mini App, smart file library and moderation tools'};
+export const metadata={title:'YAJETZY V7 – YAJE Community OS',description:'Telegram Mini App, smart file library and moderation tools'};
 export default function Home(){
   return <main style={{fontFamily:'Inter,system-ui,sans-serif',background:'radial-gradient(circle at 80% 4%,#174956,#091422 52%)',color:'#e4f5ff',minHeight:'100vh',padding:'60px 20px'}}>
     <div style={{maxWidth:1000,margin:'auto'}}>
