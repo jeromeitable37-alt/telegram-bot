@@ -171,7 +171,7 @@ export default function YAJETZYMiniApp(){
   if(!boot.groups?.length)return <main className="v6-locked"><div className="v6-logo">Y</div><h2>No available communities</h2><p>Join a community managed by YAJETZY to use its hub.</p><a href={host} className="v6-btn primary">Back to bot</a></main>;
   return <div className="v6-app">
     <aside className={'v6-sidebar '+(menu?'mobile-open':'')}>
-      <div className="v6-brand"><div className="v6-logo">Y</div><div><strong>YAJETZY</strong><span>COMMUNITY OS · V6</span></div></div>
+      <div className="v6-brand"><div className="v6-logo">Y</div><div><strong>YAJETZY</strong><span>COMMUNITY OS · V7</span></div></div>
       <div className="v6-sidelabel">WORKSPACE</div>
       <select aria-label="Select Telegram group" className="v6-select" value={groupId} onChange={e=>{setGroupId(e.target.value);setData(null);setSearch('');setHowHistory([]);setSentLink('');setTab('home');setMenu(false);}}>
         {boot.groups.map(g=><option key={g.chatId} value={g.chatId}>{g.title}</option>)}
@@ -275,7 +275,7 @@ export default function YAJETZYMiniApp(){
           </div>
         </>}
       </div>}
-      <footer className="v6-footer"><span>YAJETZY V6 · Secure Telegram community platform</span><a href={host}>Open bot ↗</a></footer>
+      <footer className="v6-footer"><span>YAJETZY V7 · Secure Telegram community platform</span><a href={host}>Open bot ↗</a></footer>
     </main>
   </div>;
 }
