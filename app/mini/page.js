@@ -11,7 +11,7 @@ const securityOptions=[
   ['security_auto_mute','Mute/ban persistent spammers']
 ];
 const initialTabs=[
-  ['home','⌂','Overview'],['search','⌕','File Finder'],['library','▣','File Center'],
+  ['home','⌂','Overview'],['search','⌕','File Finder'],['vault','▤','My Vault'],['library','▣','File Center'],
   ['how','✧','Ask YAJETZY AI'],['member','◈','Member Hub'],['admin','⚙','Admin Console']
 ];
 function Card({children,className=''}){return <section className={'v6-card '+className}>{children}</section>;}
@@ -45,6 +45,9 @@ export default function YAJETZYMiniApp(){
   const [busy,setBusy]=useState(false);
   const [search,setSearch]=useState('');
   const [searchScope,setSearchScope]=useState('current');
+  const [vaultQuery,setVaultQuery]=useState('');
+  const [vaultData,setVaultData]=useState(null);
+  const [vaultBusy,setVaultBusy]=useState(false);
   const [allSearchBusy,setAllSearchBusy]=useState(false);
   const [searchResults,setSearchResults]=useState(null);
   const [sendTopic,setSendTopic]=useState('1');
@@ -131,6 +134,29 @@ export default function YAJETZYMiniApp(){
       setSearchResults(result);
     }catch(error){setNotice(error.message);}
     finally{setAllSearchBusy(false);}
+  };
+
+  useEffect(()=>{
+    if(!auth||tab!=='vault')return;
+    let active=true;
+    const handle=setTimeout(()=>{
+      api('?mode=myvault&q='+encodeURIComponent(vaultQuery.trim())).then(result=>{
+        if(active)setVaultData(result);
+      }).catch(error=>{if(active)setNotice(error.message);});
+    },300);
+    return()=>{active=false;clearTimeout(handle);};
+  },[auth,tab,vaultQuery,api]);
+  const vaultAction=async(action,id)=>{
+    if(vaultBusy)return;
+    setVaultBusy(true);setNotice('');
+    try{
+      await api('',{action,messageId:id});
+      if(action==='vault_send')setNotice('✅ Saved file sent to your private Telegram chat with YAJETZY.');
+      else setNotice('✅ File removed from your vault index. Original Telegram messages are unchanged.');
+      const result=await api('?mode=myvault&q='+encodeURIComponent(vaultQuery.trim()));
+      setVaultData(result);
+    }catch(error){setNotice(error.message);}
+    finally{setVaultBusy(false);}
   };
   const change=async(body,after)=>{
     if(busy)return;
@@ -249,6 +275,30 @@ export default function YAJETZYMiniApp(){
             <p className="v6-secondary">Bot cannot automatically join your Telegram groups or retrieve old message history. Group admins must add YAJETZY, enable file sharing and approve files. Private posts are only opened in their source groups.</p>
           </Card>}
           </div>}
+        </>}
+
+        {tab==='vault'&&<>
+          <div className="v6-page-heading">
+            <div className="v6-eyebrow">PERSONAL TELEGRAM LIBRARY</div>
+            <h1>My File Vault</h1>
+            <p>Not an admin of the other Telegram groups? Forward allowed files or tutorials to YAJETZY privately, then search them here. Your vault is available only to your verified Telegram account.</p>
+          </div>
+          <Card>
+            <div className="v6-section-title"><h2>📁 My private saved files</h2><Tag tone="ok">Only you can access</Tag></div>
+            <p className="v6-secondary">Open <a href="https://t.me/yaje37_bot" target="_blank" rel="noreferrer">the private YAJETZY chat</a> and forward files from your groups (if forwarding is allowed). Each forwarded document or tutorial video is indexed in your personal vault. You can also reply to a private file with /save.</p>
+            <div className="v6-search"><span>⌕</span><input value={vaultQuery} onChange={e=>setVaultQuery(e.target.value)} placeholder="Find my saved file or tutorial…" aria-label="Search my private vault" /></div>
+            {!vaultData?<Empty>Loading your private file library…</Empty>:
+              !vaultData.files?.length?<Empty>No saved files found. Forward an allowed file to @yaje37_bot to start your vault.</Empty>:
+                vaultData.files.map(file=><div key={file.id} className="v6-file">
+                  <span className="v6-file-icon">▣</span>
+                  <div className="v6-file-meta"><strong>{file.name}</strong><div className="v6-filename-detail"><Tag tone="ok">Private</Tag><span>{fmt(file.createdAt)}</span></div></div>
+                  <div className="v6-file-actions">
+                    {button('📥 Send privately',()=>vaultAction('vault_send',file.id),'primary',vaultBusy)}
+                    {button('Remove',()=>vaultAction('vault_delete',file.id),'danger',vaultBusy)}
+                  </div>
+                </div>)}
+          </Card>
+          <p className="v6-secondary">YAJetzy cannot access protected messages, scan file contents or search another group's history automatically. Files are not shared with other group members through My Vault.</p>
         </>}
         {tab==='library'&&<>
           <div className="v6-page-heading"><div className="v6-eyebrow">CURATED RESOURCE HUB</div><h1>Smart File Center</h1><p>Community uploads are indexed automatically in enabled topics. Admin review is required before a download link becomes available here.</p></div>
