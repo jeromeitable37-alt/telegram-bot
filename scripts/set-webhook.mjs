@@ -12,7 +12,7 @@ const result = await fetch('https://api.telegram.org/bot'+BOT_TOKEN+'/setWebhook
   method:'POST',headers:{'content-type':'application/json'},
   body:JSON.stringify({
     url:host+'/api/telegram',secret_token:TELEGRAM_WEBHOOK_SECRET,
-    allowed_updates:['message','edited_message','my_chat_member','chat_join_request','callback_query'],
+    allowed_updates:['message','edited_message','my_chat_member','chat_member','chat_join_request','callback_query'],
     drop_pending_updates:false
   })
 }).then(r=>r.json());
