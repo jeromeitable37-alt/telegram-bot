@@ -243,3 +243,16 @@ CREATE TABLE IF NOT EXISTS ai_question_limits (
   daily_count INTEGER NOT NULL DEFAULT 0,
   PRIMARY KEY(chat_id,user_id)
 );
+
+
+-- YAJETZY Multi-Group File Federation: opt-in per supergroup.
+-- Only live Telegram-confirmed members of source group can search its approved file metadata.
+-- Cross-group search never copies content into a different Telegram group.
+ALTER TABLE groups ADD COLUMN IF NOT EXISTS federated_search_enabled BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE groups ADD COLUMN IF NOT EXISTS file_autoindex_enabled BOOLEAN NOT NULL DEFAULT FALSE;
+CREATE INDEX IF NOT EXISTS groups_federated_idx ON groups(chat_id)
+  WHERE enabled=TRUE AND federated_search_enabled=TRUE;
+CREATE TABLE IF NOT EXISTS federated_search_cooldowns (
+  user_id BIGINT PRIMARY KEY,
+  last_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
