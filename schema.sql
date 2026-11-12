@@ -223,3 +223,23 @@ CREATE TABLE IF NOT EXISTS security_events (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS security_events_recent_idx ON security_events(chat_id,created_at DESC);
+
+
+-- YAJETZY V7: per-user interactive /find and /how prompts, with hourly/daily anti-abuse limits.
+CREATE TABLE IF NOT EXISTS bot_prompt_sessions (
+  chat_id BIGINT NOT NULL,
+  prompt_message_id BIGINT NOT NULL,
+  user_id BIGINT NOT NULL,
+  kind TEXT NOT NULL CHECK(kind IN ('find','how')),
+  expires_at TIMESTAMPTZ NOT NULL DEFAULT(NOW()+INTERVAL '10 minutes'),
+  PRIMARY KEY(chat_id,prompt_message_id)
+);
+CREATE INDEX IF NOT EXISTS bot_prompt_sessions_expiry_idx ON bot_prompt_sessions(expires_at);
+CREATE TABLE IF NOT EXISTS ai_question_limits (
+  chat_id BIGINT NOT NULL,
+  user_id BIGINT NOT NULL,
+  last_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  quota_day DATE NOT NULL DEFAULT (NOW() AT TIME ZONE 'UTC')::DATE,
+  daily_count INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY(chat_id,user_id)
+);
