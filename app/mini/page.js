@@ -11,15 +11,15 @@ const securityOptions=[
   ['security_auto_mute','Mute/ban persistent spammers']
 ];
 const initialTabs=[
-  ['home','⌂','Overview'],['search','⌕','Smart Search'],['library','▣','File Center'],
-  ['member','◈','Member Hub'],['admin','⚙','Admin Console']
+  ['home','⌂','Overview'],['search','⌕','File Finder'],['library','▣','File Center'],
+  ['how','✧','Ask YAJETZY AI'],['member','◈','Member Hub'],['admin','⚙','Admin Console']
 ];
 function Card({children,className=''}){return <section className={'v6-card '+className}>{children}</section>;}
 function Tag({children,tone='neutral'}){return <span className={'v6-tag '+tone}>{children}</span>;}
 function Empty({children}){return <div className="v6-empty">{children}</div>;}
 const button=(text,fn,variant='secondary',disabled=false)=><button type="button" className={'v6-btn '+variant} disabled={disabled} onClick={fn}>{text}</button>;
 const fmt=date=>date?new Date(date).toLocaleString(undefined,{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):'';
-function FileRow({file,admin,onReview}){
+function FileRow({file,admin,onReview,onSend,busy}){
   const color=file.reviewStatus==='approved'?'ok':file.reviewStatus==='rejected'?'bad':'warn';
   return <div className="v6-file">
     <span className="v6-file-icon">{file.mime?.includes('pdf')?'▤':'▣'}</span>
@@ -28,6 +28,7 @@ function FileRow({file,admin,onReview}){
     </div>
     <div className="v6-file-actions">
       {file.link?<a className="v6-btn secondary" href={file.link} target="_blank" rel="noreferrer">Open Telegram</a>:<span className="v6-pending">Awaiting review</span>}
+      {file.reviewStatus==='approved'&&file.approvedForDelivery&&onSend&&button('📥 Send to topic',()=>onSend(file),'primary',busy)}
       {admin&&file.reviewStatus!=='approved'&&button('Approve',()=>onReview(file.id,'approved'),'primary')}
       {admin&&file.reviewStatus!=='rejected'&&button('Reject',()=>onReview(file.id,'rejected'),'danger')}
     </div>
@@ -44,6 +45,11 @@ export default function YAJETZYMiniApp(){
   const [busy,setBusy]=useState(false);
   const [search,setSearch]=useState('');
   const [searchResults,setSearchResults]=useState(null);
+  const [sendTopic,setSendTopic]=useState('1');
+  const [sentLink,setSentLink]=useState('');
+  const [howQuestion,setHowQuestion]=useState('');
+  const [howHistory,setHowHistory]=useState([]);
+  const [howBusy,setHowBusy]=useState(false);
   const [ticketText,setTicketText]=useState('');
   const [reportReason,setReportReason]=useState('');
   const [reportUser,setReportUser]=useState('');
@@ -101,6 +107,10 @@ export default function YAJETZYMiniApp(){
     return()=>{active=false;};
   },[groupId,api]);
   useEffect(()=>{
+    const listed=(data?.topics||[]).filter(t=>t.listed);
+    if(listed.length&&!listed.some(t=>String(t.id)===sendTopic))setSendTopic(String(listed[0].id));
+  },[data,sendTopic]);
+  useEffect(()=>{
     if(!groupId||search.trim().length<2){setSearchResults(null);return;}
     let active=true;
     const t=setTimeout(()=>{
@@ -127,6 +137,34 @@ export default function YAJETZYMiniApp(){
   const adminData=data?.adminData||{};
   const featured=useMemo(()=>[...topics].filter(x=>x.listed).slice(0,5),[topics]);
   const adminReview=(id,status)=>change({action:'file_review',messageId:id,status});
+  const sendFile=async(file)=>{
+    if(busy||!sendTopic)return;
+    setBusy(true);setSentLink('');setNotice('');
+    try{
+      const result=await api('',{chatId:groupId,action:'file_send',messageId:file.id,threadId:sendTopic});
+      setSentLink(result.link||'');
+      setNotice('✅ Reviewed file sent to '+result.topicName+' in Telegram.');
+    }catch(error){setNotice(error.message);}
+    finally{setBusy(false);}
+  };
+  const askInApp=async()=>{
+    const q=howQuestion.trim();
+    if(howBusy||q.length<5||q.length>500)return;
+    setHowBusy(true);setNotice('');
+    const key=Date.now()+'-'+Math.random().toString(36).slice(2);
+    setHowHistory(prev=>[...prev.slice(-7),{key,question:q,answer:'',mode:'loading'}]);
+    setHowQuestion('');
+    try{
+      const result=await api('',{chatId:groupId,action:'ask_ai',question:q});
+      setHowHistory(prev=>prev.map(item=>item.key===key?
+        {...item,answer:result.answer,mode:result.mode}:item));
+      if(result.notice)setNotice(result.notice);
+    }catch(error){
+      setHowHistory(prev=>prev.map(item=>item.key===key?
+        {...item,answer:error.message,mode:'error'}:item));
+    }finally{setHowBusy(false);}
+  };
+
   if(starting)return <div className="v6-center"><div className="v6-spinner"/>Connecting securely to Telegram…</div>;
   if(!auth)return <main className="v6-locked"><div className="v6-logo">Y</div><h1>Open YAJETZY in Telegram</h1><p>This dashboard verifies your Telegram identity. A normal browser link cannot sign you in.</p><a href={host} className="v6-btn primary">Open @yaje37_bot</a><p className="v6-small">Send /hub and tap Open Control Center.</p></main>;
   if(!boot)return <div className="v6-center"><div className="v6-spinner"/>Verifying Telegram identity…{notice&&<p>{notice}</p>}</div>;
@@ -135,7 +173,7 @@ export default function YAJETZYMiniApp(){
     <aside className={'v6-sidebar '+(menu?'mobile-open':'')}>
       <div className="v6-brand"><div className="v6-logo">Y</div><div><strong>YAJETZY</strong><span>COMMUNITY OS · V6</span></div></div>
       <div className="v6-sidelabel">WORKSPACE</div>
-      <select aria-label="Select Telegram group" className="v6-select" value={groupId} onChange={e=>{setGroupId(e.target.value);setData(null);setTab('home');setMenu(false);}}>
+      <select aria-label="Select Telegram group" className="v6-select" value={groupId} onChange={e=>{setGroupId(e.target.value);setData(null);setSearch('');setHowHistory([]);setSentLink('');setTab('home');setMenu(false);}}>
         {boot.groups.map(g=><option key={g.chatId} value={g.chatId}>{g.title}</option>)}
       </select>
       <div className="v6-sidelabel">EXPLORE</div>
@@ -146,10 +184,10 @@ export default function YAJETZYMiniApp(){
     </aside>
     <main className="v6-main">
       <header className="v6-header"><div className="v6-heading"><button className="v6-mobile-menu" onClick={()=>setMenu(!menu)}>☰</button><span className="v6-breadcrumb">{data?.group?.title||'Loading workspace'} / {nav.find(t=>t[0]===tab)?.[2]}</span></div><div className="v6-account"><Tag tone={admin?'ok':'neutral'}>{admin?'Admin':'Member'}</Tag><span className="v6-avatar">{(boot.user?.name||'Y').slice(0,1).toUpperCase()}</span></div></header>
-      {notice&&<div className="v6-notice" role="status">{notice}<button onClick={()=>setNotice('')} aria-label="Dismiss">×</button></div>}
+      {notice&&<div className="v6-notice" role="status"><span>{notice} {sentLink&&<a href={sentLink} target="_blank" rel="noreferrer">Open sent post ↗</a>}</span><button onClick={()=>{setNotice('');setSentLink('');}} aria-label="Dismiss">×</button></div>}
       {!data?<div className="v6-center"><div className="v6-spinner"/>Loading community dashboard…</div>:<div className="v6-content">
         {tab==='home'&&<>
-          <div className="v6-hero"><div><div className="v6-eyebrow">WELCOME TO YOUR COMMUNITY</div><h1>Everything YAJE.<br/><span>One command center.</span></h1><p>Find verified resources, get help, and keep your Telegram community organized.</p><div className="v6-hero-actions">{button('Explore files →',()=>setTab('library'),'primary')}{button('Find a resource',()=>setTab('search'))}</div></div><div className="v6-hero-art"><div className="v6-orbit"><span>Y</span></div></div></div>
+          <div className="v6-hero"><div><div className="v6-eyebrow">WELCOME TO YOUR COMMUNITY</div><h1>Everything YAJE.<br/><span>One command center.</span></h1><p>Find verified resources, get help, and keep your Telegram community organized.</p><div className="v6-hero-actions">{button('Explore files →',()=>setTab('search'),'primary')}{button('Ask YAJETZY AI',()=>setTab('how'))}</div></div><div className="v6-hero-art"><div className="v6-orbit"><span>Y</span></div></div></div>
           <div className="v6-stats">
             <Card><span>▣</span><strong>{admin?adminData.stats?.files||0:data.files.length}</strong><label>Files in library</label></Card>
             <Card><span>⌕</span><strong>{data.notes.length}</strong><label>Saved notes</label></Card>
@@ -160,17 +198,53 @@ export default function YAJETZYMiniApp(){
             <Card><div className="v6-section-title"><h2>Quick start</h2></div><div className="v6-checks"><div><i>{data.rulesAccepted?'✓':'1'}</i><p><strong>Review community rules</strong><small>{data.rulesAccepted?'Acknowledged':'Open Member Hub to acknowledge'}</small></p></div><div><i>2</i><p><strong>Search the file library</strong><small>Find approved files & helpful notes</small></p></div><div><i>3</i><p><strong>Need help?</strong><small>Open a support ticket for moderators</small></p></div></div>{button('Open Member Hub',()=>setTab('member'),'secondary')}</Card></div>
         </>}
         {tab==='search'&&<>
-          <div className="v6-page-heading"><div className="v6-eyebrow">SMART DISCOVERY</div><h1>Find it, faster.</h1><p>Search file names, notes, and community resources. Typos and partial matches supported.</p></div>
-          <div className="v6-search"><span>⌕</span><input autoFocus placeholder="Search LSPosed, screen recorder, guide…" value={search} onChange={e=>setSearch(e.target.value)} /></div>
-          {search.length<2?<Card><Empty>Type at least two letters to search your community's resources.</Empty></Card>:<div className="v6-columns"><Card><div className="v6-section-title"><h2>Matching files</h2><span>{searchResults?.files?.length||0} results</span></div>{searchResults?.files?.map(f=><FileRow key={f.id} file={f} admin={admin} onReview={adminReview}/>)}{!searchResults?.files?.length&&<Empty>No approved files found. An admin can review new uploads in File Center.</Empty>}</Card><Card><div className="v6-section-title"><h2>Matching notes</h2><span>{searchResults?.notes?.length||0} results</span></div>{searchResults?.notes?.map(n=><div className="v6-note" key={n.slug}><b>#{n.slug}</b><p>{n.content}</p></div>)}{!searchResults?.notes?.length&&<Empty>No matching notes yet.</Empty>}</Card></div>}
+          <div className="v6-page-heading"><div className="v6-eyebrow">SMART DISCOVERY</div><h1>Find it, faster.</h1><p>Find reviewed files and tutorials from the selected Telegram group. Tap a result to open the post or send the file to a discussion.</p></div>
+
+          <Card className="v6-topic-picker">
+            <div className="v6-section-title"><h2>📥 Send approved files to Telegram</h2><Tag tone="ok">Connected to {data.group.title}</Tag></div>
+            <div className="v6-row-picker">
+              <label htmlFor="v6-send-topic">Choose destination topic</label>
+              <select id="v6-send-topic" className="v6-select" value={sendTopic} onChange={e=>setSendTopic(e.target.value)}>
+                {topics.filter(t=>t.listed).map(t=><option key={t.id} value={t.id}>{t.title}</option>)}
+              </select>
+            </div>
+            <p className="v6-secondary">Select a result and tap “Send to topic.” YAJETZY will copy the reviewed Telegram message into that discussion. One file per member every 30 seconds.</p>
+          </Card>
+          <div className="v6-search"><span>⌕</span><input placeholder="Search tutorials, screen recorder, guide…" value={search} onChange={e=>setSearch(e.target.value)} /></div>
+          {search.length<2?<Card><Empty>Type at least two letters to search your community's resources.</Empty></Card>:<div className="v6-columns"><Card><div className="v6-section-title"><h2>Matching files</h2><span>{searchResults?.files?.length||0} results</span></div>{searchResults?.files?.map(f=><FileRow key={f.id} file={f} admin={admin} onReview={adminReview} onSend={sendFile} busy={busy}/>)}{!searchResults?.files?.length&&<Empty>No approved files found. An admin can review new uploads in File Center.</Empty>}</Card><Card><div className="v6-section-title"><h2>Matching notes</h2><span>{searchResults?.notes?.length||0} results</span></div>{searchResults?.notes?.map(n=><div className="v6-note" key={n.slug}><b>#{n.slug}</b><p>{n.content}</p></div>)}{!searchResults?.notes?.length&&<Empty>No matching notes yet.</Empty>}</Card></div>}
         </>}
         {tab==='library'&&<>
           <div className="v6-page-heading"><div className="v6-eyebrow">CURATED RESOURCE HUB</div><h1>Smart File Center</h1><p>Community uploads are indexed automatically in enabled topics. Admin review is required before a download link becomes available here.</p></div>
           {admin&&<div className="v6-inline"><Tag tone="warn">Pending reviews: {adminData.stats?.pending_files||0}</Tag><span>Open each source and check authenticity before approving.</span></div>}
-          <Card><div className="v6-section-title"><h2>Files</h2><span>{data.files.length} items</span></div>{[...data.files].sort((a,b)=>(a.reviewStatus==='pending'?0:1)-(b.reviewStatus==='pending'?0:1)).map(f=><FileRow file={f} key={f.id} admin={admin} onReview={adminReview}/>)}{!data.files.length&&<Empty>No indexed files yet. Forward reviewed documents into a file-indexing topic or use the admin bulk link importer.</Empty>}</Card>
+          <Card><div className="v6-section-title"><h2>Destination discussion</h2></div><select className="v6-select" value={sendTopic} onChange={e=>setSendTopic(e.target.value)} aria-label="Choose Telegram topic to send files">{topics.filter(t=>t.listed).map(t=><option key={t.id} value={t.id}>{t.title}</option>)}</select><p className="v6-secondary">Use 📥 Send to topic only for reviewed, permitted files.</p></Card>
+          <Card><div className="v6-section-title"><h2>Files</h2><span>{data.files.length} items</span></div>{[...data.files].sort((a,b)=>(a.reviewStatus==='pending'?0:1)-(b.reviewStatus==='pending'?0:1)).map(f=><FileRow file={f} key={f.id} admin={admin} onReview={adminReview} onSend={sendFile} busy={busy}/>)}{!data.files.length&&<Empty>No indexed files yet. Forward reviewed documents into a file-indexing topic or use the admin bulk link importer.</Empty>}</Card>
           {admin&&<Card><div className="v6-section-title"><h2>Bulk import Telegram post links</h2><Tag>Admin only</Tag></div><p className="v6-secondary">Paste up to 30 links, one per line. Each must have its original Telegram message URL and a filename. Links start as pending until reviewed.</p><textarea rows="5" className="v6-textarea" placeholder={'https://t.me/c/4476272910/4/555 | YAJE-Guide.pdf\nhttps://t.me/c/4476272910/7/557 | Example.apk'} value={bulkText} onChange={e=>setBulkText(e.target.value)} />{button(busy?'Saving…':'Import links',()=>change({action:'import_links',entries:bulkText},()=>setBulkText('')),'primary',busy)}</Card>}
         </>}
-        {tab==='member'&&<>
+        
+        {tab==='how'&&<>
+          <div className="v6-page-heading"><div className="v6-eyebrow">PERSONAL TECH ASSISTANT</div><h1>Ask YAJETZY AI</h1><p>Ask technology questions in Taglish or English. Responses appear privately in this Mini App, not in the Telegram discussion.</p></div>
+          <Card className="v6-ai-panel">
+            <div className="v6-section-title"><h2>✧ Technology help</h2><Tag tone="ok">Member of {data.group.title}</Tag></div>
+            <p className="v6-secondary">Topics: Android troubleshooting, device safety, app compatibility, tutorials, and general technology. If AI isn't configured, YAJETZY provides basic guidance instead.</p>
+            {!howHistory.length&&<div className="v6-ai-examples">
+              {['What is Android rooting and its risks?','What should I check after a bootloop?','How do I verify an app source?'].map(q=><button type="button" key={q} onClick={()=>setHowQuestion(q)}>{q} ↗</button>)}
+            </div>}
+            <div className="v6-ai-history">
+              {howHistory.map(item=><div className="v6-ai-exchange" key={item.key}>
+                <div className="v6-ai-bubble user"><strong>You</strong><p>{item.question}</p></div>
+                <div className={'v6-ai-bubble bot '+(item.mode==='error'?'error':'')}><strong>✧ YAJETZY {item.mode==='basic'?'Basic Help':item.mode==='ai'?'AI':''}</strong>
+                  <p>{item.mode==='loading'?'Preparing an answer…':item.answer}</p></div>
+              </div>)}
+            </div>
+            <form className="v6-ai-compose" onSubmit={e=>{e.preventDefault();askInApp();}}>
+              <label htmlFor="v6-how-question">Your question</label>
+              <textarea id="v6-how-question" className="v6-textarea" rows="3" maxLength={500} value={howQuestion} onChange={e=>setHowQuestion(e.target.value)} placeholder="How can I safely troubleshoot my Android phone?" />
+              <div className="v6-ai-compose-bottom"><span>{howQuestion.length}/500 · Maximum 15 questions per day</span><button type="submit" className="v6-btn primary" disabled={howBusy||howQuestion.trim().length<5}>{howBusy?'Answering…':'Ask YAJETZY →'}</button></div>
+            </form>
+            <p className="v6-secondary">Do not share passwords or private information. If AI is connected, questions are sent to the configured AI provider; answers can be mistaken. Device-specific steps should be checked against official documentation.</p>
+          </Card>
+        </>}
+{tab==='member'&&<>
           <div className="v6-page-heading"><div className="v6-eyebrow">YOUR COMMUNITY</div><h1>Member Hub</h1><p>Everything you need to get started and receive support.</p></div>
           <div className="v6-columns">
             <Card><div className="v6-section-title"><h2>Community rules</h2><Tag tone={data.rulesAccepted?'ok':'warn'}>{data.rulesAccepted?'Read & acknowledged':'Please review'}</Tag></div><p className="v6-rules">{data.group.rules}</p>{!data.rulesAccepted&&button('I have read the rules',()=>change({action:'rules_ack'}),'primary',busy)}</Card>
