@@ -55,7 +55,7 @@ async function handle(request, activate) {
       await telegram('setWebhook',{
         url:WEBHOOK_URL,
         secret_token:secret,
-        allowed_updates:['message','edited_message','my_chat_member','chat_join_request','callback_query'],
+        allowed_updates:['message','edited_message','my_chat_member','chat_member','chat_join_request','callback_query'],
         drop_pending_updates:false
       });
     }
