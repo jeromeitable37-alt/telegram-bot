@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {fileNamesInNote,fileReferenceReply,genericFilenameNoteHtml} from '../lib/note-delivery-helpers.mjs';
+import {fileNamesInNote,fileReferenceReply,genericFilenameNoteHtml,eligibleAutoDeliveryFiles} from '../lib/note-delivery-helpers.mjs';
 
 const chatId=-1004476272910;
 const note=`📂 YAJE FILE REFERENCE — anti_bootloop
@@ -70,4 +70,29 @@ test('informational notes protect .zip filenames while preserving official proje
   assert.match(out.text,/<code>LSPosed-v2\.0\.0-release\.zip<\/code>/);
   assert.match(out.text,/https:\/\/github.com\/LSPosed\/LSPosed/);
   assert.equal(genericFilenameNoteHtml('YAJE','normal','Hello members.'),null);
+});
+
+test('auto-delivers the first approved file named in #anti_bootloop and skips absent ones',()=>{
+  const list=eligibleAutoDeliveryFiles(note,[
+    {message_id:'32',thread_id:'4',display_name:'abootloop_v1.2.zip',file_name:'abootloop_v1.2.zip',review_status:'approved',delivery_approved:true}
+  ],chatId);
+  assert.deepEqual(list,[{
+    messageId:32,threadId:4,name:'abootloop_v1.2.zip',
+    url:'https://t.me/c/4476272910/4/32'
+  }]);
+});
+test('auto delivery needs explicit approval, valid message, and respects restricted notes',()=>{
+  const file={message_id:'32',thread_id:'4',display_name:'abootloop_v1.2.zip',
+    file_name:'abootloop_v1.2.zip',review_status:'approved',delivery_approved:true};
+  assert.equal(eligibleAutoDeliveryFiles(note,[{...file,delivery_approved:false}],chatId).length,0);
+  assert.equal(eligibleAutoDeliveryFiles(note,[{...file,review_status:'pending'}],chatId).length,0);
+  assert.equal(eligibleAutoDeliveryFiles(note,[{...file,message_id:'invalid'}],chatId).length,0);
+  assert.equal(eligibleAutoDeliveryFiles(note+'\nStatus: Restricted review. No download link will be shared.',[file],chatId).length,0);
+});
+test('auto delivery caps files at 2 and does not duplicate indexed messages',()=>{
+  const files=['abootloop_v1.2.zip','bootloop_protector.zip','[Storm Guard] Bootloop Protector V2.zip'].map((name,i)=>({
+    message_id:String(i+32),thread_id:'4',display_name:name,file_name:name,review_status:'approved',delivery_approved:true
+  }));
+  assert.deepEqual(eligibleAutoDeliveryFiles(note,files,chatId).map(f=>f.messageId),[32,33]);
+  assert.deepEqual(eligibleAutoDeliveryFiles(note,[files[0],files[0]],chatId).map(f=>f.messageId),[32]);
 });
