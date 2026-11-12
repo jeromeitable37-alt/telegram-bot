@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {fileNamesInNote,fileReferenceReply} from '../lib/note-delivery-helpers.mjs';
+import {fileNamesInNote,fileReferenceReply,genericFilenameNoteHtml} from '../lib/note-delivery-helpers.mjs';
 
 const chatId=-1004476272910;
 const note=`📂 YAJE FILE REFERENCE — anti_bootloop
@@ -52,4 +52,22 @@ test('HTML-escape filenames so injected tags are inert',()=>{
   assert.ok(result);
   assert.match(result.text,/&lt;script&gt;/);
   assert.doesNotMatch(result.text,/<script>/);
+});
+
+test('restricted notes never expose direct file-post buttons',()=>{
+  const out=fileReferenceReply({chatId,slug:'restricted',groupName:'YAJE Discussions',
+    content:'YAJE FILE REFERENCE\n• risky-item.apk\nStatus: Restricted review. No download link will be shared.',
+    files:[{file_name:'risky-item.apk',message_id:350,thread_id:7,review_status:'approved',delivery_approved:true}]
+  });
+  assert.equal(out.linked,0);
+  assert.equal(out.reply_markup,undefined);
+  assert.match(out.text,/Restricted note/);
+  assert.match(out.text,/<code>risky-item\.apk<\/code>/);
+});
+test('informational notes protect .zip filenames while preserving official project URLs',()=>{
+  const out=genericFilenameNoteHtml('YAJE Discussions','lsposed',
+    'Official GitHub: https://github.com/LSPosed/LSPosed\nYAJE group file mentioned: LSPosed-v2.0.0-release.zip');
+  assert.match(out.text,/<code>LSPosed-v2\.0\.0-release\.zip<\/code>/);
+  assert.match(out.text,/https:\/\/github.com\/LSPosed\/LSPosed/);
+  assert.equal(genericFilenameNoteHtml('YAJE','normal','Hello members.'),null);
 });
