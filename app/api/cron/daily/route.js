@@ -1,6 +1,6 @@
 import { timingSafeEqual } from 'node:crypto';
 import { db } from '../../../../lib/db.js';
-import { send } from '../../../../lib/telegram.js';
+import {publishAnnouncement} from '../../../../lib/announcements.js';
 
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
@@ -28,7 +28,15 @@ export async function GET(request) {
   `;
   let sent=0,failed=0;
   for (const group of groups) {
-    try { await send(group.chat_id,'📢 DAILY REMINDER\n\n'+group.daily_text); sent++; }
+    try {
+      const result=await publishAnnouncement(group.chat_id,'📢 DAILY REMINDER\\n\\n'+group.daily_text);
+      if(result.general||result.announcement)sent++;
+      if(result.errors.length){
+        failed++;
+        console.warn('Daily announcement partially failed:',String(group.chat_id),result.errors.join(','));
+      }
+      if(!result.general&&!result.announcement)await sql`UPDATE groups SET daily_last_sent=NULL WHERE chat_id=${group.chat_id}`;
+    }
     catch(error) {
       failed++;
       console.error('Daily send failed:',String(group.chat_id),error.message);
