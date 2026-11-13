@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {linkedNoteText,validLinkNoteSlug,savedGroupFileTitle} from '../lib/file-note-helpers.mjs';
+import {linkedNoteText,validLinkNoteSlug,savedGroupFileTitle,autoNoteSlugFromMedia} from '../lib/file-note-helpers.mjs';
 import {linkedMediaNoteReply} from '../lib/note-delivery-helpers.mjs';
 import {rankedFiles} from '../lib/v6-core.mjs';
 
@@ -82,4 +82,15 @@ test('/save still refuses restricted APK names from public direct delivery',()=>
   assert.ok(result);
   assert.equal(result.eligible.length,0);
   assert.equal(result.reply_markup,undefined);
+});
+
+test('auto publish gives clear hashtag aliases without overwriting existing human notes',()=>{
+  assert.equal(autoNoteSlugFromMedia({fileName:'Getting Started.pdf',title:'Getting Started.pdf'}),'getting_started');
+  assert.equal(autoNoteSlugFromMedia({fileName:'',title:'Android Setup Tutorial'}),'android_setup_tutorial');
+  assert.equal(autoNoteSlugFromMedia({fileName:'',title:'Tutorial video #99'}),null);
+  assert.equal(autoNoteSlugFromMedia({fileName:'',title:'Photo guide #22'}),null);
+  assert.equal(autoNoteSlugFromMedia({fileName:'2026-guide.pdf',title:'2026-guide.pdf'}),'file_2026_guide');
+  assert.equal(autoNoteSlugFromMedia({fileName:'',title:'news'}),'news');
+  assert.equal(autoNoteSlugFromMedia({fileName:'',title:'rules'}),null);
+  assert.equal(autoNoteSlugFromMedia({fileName:'',title:'a'.repeat(300)}).length,48);
 });
