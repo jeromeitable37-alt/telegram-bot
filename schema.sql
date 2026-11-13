@@ -281,3 +281,7 @@ CREATE TABLE IF NOT EXISTS personal_vault_cooldowns (
 -- returning a fragile text URL. Old linked posts keep copyMessage fallback.
 ALTER TABLE indexed_files ADD COLUMN IF NOT EXISTS file_id TEXT NOT NULL DEFAULT '';
 ALTER TABLE indexed_files ADD COLUMN IF NOT EXISTS media_kind TEXT NOT NULL DEFAULT '';
+
+-- Optional dedicated Telegram forum topic for announcements.
+-- Keep General as a destination; never guess an unregistered topic ID.
+ALTER TABLE groups ADD COLUMN IF NOT EXISTS announcement_thread_id BIGINT NOT NULL DEFAULT 0;
