@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {restrictedFileName,publicFileAllowed} from '../lib/file-policy.mjs';
+import {restrictedFileName,publicFileAllowed,autoPublishMediaAllowed} from '../lib/file-policy.mjs';
 import {fileFinderKeyboard} from '../lib/v7-search-helpers.mjs';
 
 test('normal reviewed documents and tutorials remain available',()=>{
@@ -27,4 +27,31 @@ test('finder never offers delivery button for restricted file even if approved',
   ]);
   assert.equal(keyboard.inline_keyboard[0][0].callback_data,'fileget:12');
   assert.equal(keyboard.inline_keyboard.some(row=>row.some(x=>x.callback_data==='fileget:11')),false);
+});
+
+test('new ordinary media is auto-approved only when uploaded in indexing-enabled topic',()=>{
+  assert.equal(autoPublishMediaAllowed(
+    {video:{file_id:'v1',mime_type:'video/mp4'}},
+    {title:'Helpful tutorial',fileName:'',mime:'video/mp4'}),true);
+  assert.equal(autoPublishMediaAllowed(
+    {photo:[{file_id:'p1'}]},{title:'Screenshot guide',mime:'image/jpeg'}),true);
+  assert.equal(autoPublishMediaAllowed(
+    {document:{file_id:'pdf'}},{title:'Readme.pdf',fileName:'Readme.pdf',mime:'application/pdf'}),true);
+  assert.equal(autoPublishMediaAllowed(
+    {document:{file_id:'text'}},{title:'notes.txt',fileName:'notes.txt',mime:'text/plain'}),true);
+});
+test('unsafe or unknown executable uploads are never silently approved',()=>{
+  const files=[
+    {fileName:'GameMod.apk',mime:'application/octet-stream'},
+    {fileName:'KernelPatch.zip',mime:'application/zip'},
+    {fileName:'Disable Thermal.zip',mime:'application/zip'},
+    {fileName:'app.exe',mime:'application/octet-stream'},
+    {fileName:'guide.pdf',mime:'application/octet-stream'},
+    {fileName:'module.zip',mime:'application/pdf'}
+  ];
+  for(const item of files){
+    assert.equal(autoPublishMediaAllowed(
+      {document:{file_id:'binary'}},{title:item.fileName,...item}),false,item.fileName);
+  }
+  assert.equal(autoPublishMediaAllowed({text:'not a file'},{title:'file.pdf',fileName:'file.pdf',mime:'application/pdf'}),false);
 });
