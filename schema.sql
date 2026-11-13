@@ -275,3 +275,9 @@ CREATE TABLE IF NOT EXISTS personal_vault_cooldowns (
   user_id BIGINT PRIMARY KEY,
   last_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Telegram native media ID captured from newly indexed real message updates.
+-- /save name stores this so the bot can sendDocument/sendVideo/sendPhoto without
+-- returning a fragile text URL. Old linked posts keep copyMessage fallback.
+ALTER TABLE indexed_files ADD COLUMN IF NOT EXISTS file_id TEXT NOT NULL DEFAULT '';
+ALTER TABLE indexed_files ADD COLUMN IF NOT EXISTS media_kind TEXT NOT NULL DEFAULT '';
