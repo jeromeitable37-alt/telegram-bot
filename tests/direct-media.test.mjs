@@ -34,3 +34,9 @@ test('exact alias wins over loosely matching approved files',()=>{
   const other=approved(51,'potato tutorial extra.pdf');
   assert.equal(exactFileForQuery('potato',[other,exact])?.message_id,'50');
 });
+
+test('typo-only fuzzy suggestion never triggers direct file delivery',()=>{
+  const file=approved(71,'ScreenRecorder Manual.pdf','ScreenRecorder Manual.pdf');
+  assert.equal(exactFileForQuery('screanrecoder',[file]),null);
+  assert.equal(exactFileForQuery('screenrecorder',[file])?.message_id,'71');
+});
