@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {linkedNoteText,validLinkNoteSlug} from '../lib/file-note-helpers.mjs';
+import {linkedNoteText,validLinkNoteSlug,savedGroupFileTitle} from '../lib/file-note-helpers.mjs';
+import {linkedMediaNoteReply} from '../lib/note-delivery-helpers.mjs';
+import {rankedFiles} from '../lib/v6-core.mjs';
 
 const url='https://t.me/c/4476272910/123/456';
 
@@ -45,4 +47,39 @@ test('keeps official source link and removes outdated pending status when file a
   const out=linkedNoteText('lsposed','LSPosed-v2.0.0.zip','https://t.me/c/4476272910/4/679',old);
   assert.match(out,/github.com\/LSPosed\/LSPosed/);
   assert.doesNotMatch(out,/pending/);
+});
+
+test('/save name produces a searchable filename alias while preserving original name',()=>{
+  const title=savedGroupFileTitle('potato_graphics','ChromaBoostv3.zip');
+  assert.equal(title,'potato_graphics · ChromaBoostv3.zip');
+  assert.equal(savedGroupFileTitle('bad name','Guide.pdf'),null);
+  assert.equal(savedGroupFileTitle('a'.repeat(48),'x'.repeat(300)).length,200);
+  assert.deepEqual(rankedFiles('potato_graphics',[
+    {message_id:'33',display_name:title,file_name:'ChromaBoostv3.zip',indexed_at:'2026-11-13'}
+  ]).map(x=>x.message_id),['33']);
+});
+test('/save resource note is retrievable by #name with direct file and original-post buttons',()=>{
+  const title=savedGroupFileTitle('screens','ScreenRecorder.apk');
+  const note=linkedNoteText('screens',title,'https://t.me/c/4476272910/4/72');
+  const result=linkedMediaNoteReply({
+    slug:'screens',groupName:'YAJE Discussions',content:note,chatId:-1004476272910,
+    files:[{message_id:'72',thread_id:'4',display_name:title,file_name:'ScreenRecorder.apk',
+      review_status:'approved',delivery_approved:true}]
+  });
+  assert.ok(result);
+  assert.equal(result.eligible.length,1);
+  assert.equal(result.eligible[0].messageId,72);
+  assert.equal(result.reply_markup.inline_keyboard[0][0].url,'https://t.me/c/4476272910/4/72');
+  assert.equal(result.reply_markup.inline_keyboard[0][1].callback_data,'fileget:72');
+});
+test('/save still refuses restricted APK names from public direct delivery',()=>{
+  const title=savedGroupFileTitle('blocked','GhostLock.apk');
+  const note=linkedNoteText('blocked',title,'https://t.me/c/4476272910/4/77');
+  const result=linkedMediaNoteReply({slug:'blocked',groupName:'YAJE Discussions',
+    content:note,chatId:-1004476272910,
+    files:[{message_id:'77',thread_id:'4',display_name:title,file_name:'GhostLock.apk',
+      review_status:'approved',delivery_approved:true}]});
+  assert.ok(result);
+  assert.equal(result.eligible.length,0);
+  assert.equal(result.reply_markup,undefined);
 });
